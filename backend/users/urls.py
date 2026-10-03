@@ -5,7 +5,10 @@ from .views import (
     CompanyRegistrationView,
     CurrentUserView,
     LoginView,
+    PasswordResetConfirmView,
+    PasswordResetRequestView,
     StudentRegistrationView,
+    TPORegistrationView,
 )
 
 urlpatterns = [
@@ -18,6 +21,11 @@ urlpatterns = [
         "auth/register/company/",
         CompanyRegistrationView.as_view(),
         name="register-company",
+    ),
+    path(
+        "auth/register/tpo/",
+        TPORegistrationView.as_view(),
+        name="register-tpo",
     ),
     path(
         "auth/login/",
@@ -33,5 +41,15 @@ urlpatterns = [
         "auth/me/",
         CurrentUserView.as_view(),
         name="current-user",
+    ),
+    path(
+        "auth/password/forgot/",
+        PasswordResetRequestView.as_view(),
+        name="password-reset-request",
+    ),
+    path(
+        "auth/password/reset/",
+        PasswordResetConfirmView.as_view(),
+        name="password-reset-confirm",
     ),
 ]

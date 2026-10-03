@@ -9,7 +9,12 @@ from .views import (
     CompanyJobListView,
     CompanyOfferCreateView,
     CompanyProfileView,
+    NotificationListView,
+    NotificationReadAllView,
+    NotificationReadView,
     StudentApplicationListView,
+    StudentCompanyListView,
+    StudentDashboardStatsView,
     StudentInterviewListView,
     StudentJobApplyView,
     StudentJobListView,
@@ -19,9 +24,15 @@ from .views import (
     TPOCompanyDetailView,
     TPOCompanyListView,
     TPOCompanyVerifyView,
+    TPOApplicationListView,
+    TPOInterviewListView,
     TPOJobListView,
+    TPOOfferListView,
     TPOJobVerifyView,
     TPOPlacementListView,
+    TPOPlacementDriveDetailView,
+    TPOPlacementDriveListCreateView,
+    TPOPlacementRecordUpdateView,
     TPOPlacementSummaryView,
     TPOStudentListView,
 )
@@ -29,6 +40,8 @@ from .views import (
 urlpatterns = [
     # Stage 3: Self-profile management
     path("student/profile/", StudentProfileView.as_view(), name="student-profile"),
+    path("student/dashboard-stats/", StudentDashboardStatsView.as_view(), name="student-dashboard-stats"),
+    path("student/companies/", StudentCompanyListView.as_view(), name="student-company-list"),
     path("company/profile/", CompanyProfileView.as_view(), name="company-profile"),
 
     # Stage 4: TPO Company & Student management
@@ -44,6 +57,9 @@ urlpatterns = [
 
     # Stage 5: TPO Job Verification & Listing
     path("tpo/jobs/", TPOJobListView.as_view(), name="tpo-job-list"),
+    path("tpo/applications/", TPOApplicationListView.as_view(), name="tpo-application-list"),
+    path("tpo/interviews/", TPOInterviewListView.as_view(), name="tpo-interview-list"),
+    path("tpo/offers/", TPOOfferListView.as_view(), name="tpo-offer-list"),
     path("tpo/jobs/<int:pk>/verify/", TPOJobVerifyView.as_view(), name="tpo-job-verify"),
     path("tpo/jobs/<int:pk>/approve/", TPOJobVerifyView.as_view(), name="tpo-job-approve"),
 
@@ -67,7 +83,13 @@ urlpatterns = [
 
     # Stage 6: TPO Placements & Analytics
     path("tpo/placements/", TPOPlacementListView.as_view(), name="tpo-placement-list"),
+    path("tpo/placements/<int:pk>/", TPOPlacementRecordUpdateView.as_view(), name="tpo-placement-update"),
     path("tpo/placements/summary/", TPOPlacementSummaryView.as_view(), name="tpo-placement-summary"),
+    path("tpo/placement-drives/", TPOPlacementDriveListCreateView.as_view(), name="tpo-placement-drive-list"),
+    path("tpo/placement-drives/<int:pk>/", TPOPlacementDriveDetailView.as_view(), name="tpo-placement-drive-detail"),
+    path("notifications/", NotificationListView.as_view(), name="notification-list"),
+    path("notifications/read-all/", NotificationReadAllView.as_view(), name="notification-read-all"),
+    path("notifications/<int:pk>/read/", NotificationReadView.as_view(), name="notification-read"),
 ]
 
 

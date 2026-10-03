@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Company Registration - College Placement Management System</title>
+
+    <style>
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+            background:
+                radial-gradient(circle at top left, #dbeafe, transparent 35%),
+                radial-gradient(circle at bottom right, #bfdbfe, transparent 35%),
+                linear-gradient(135deg, #eff6ff, #dbeafe);
+
+            padding: 30px;
+        }
+
+        .container {
+            width: 500px;
+            max-width: 100%;
+
+            background: white;
+
+            padding: 35px;
+
+            border-radius: 22px;
+
+            box-shadow:
+                0 20px 50px rgba(0, 0, 0, 0.15);
+        }
+
+        .header {
+            text-align: center;
+
+            margin-bottom: 25px;
+        }
+
+        .header h1 {
+            font-size: 22px;
+
+            color: #1e3a8a;
+
+            text-transform: uppercase;
+        }
+
+        .icon {
+            font-size: 48px;
+
+            margin: 12px 0 5px;
+        }
+
+        .subtitle {
+            color: #64748b;
+
+            font-size: 14px;
+        }
+
+        h2 {
+            text-align: center;
+
+            color: #111827;
+
+            margin-bottom: 20px;
+
+            font-size: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+
+            margin-bottom: 7px;
+
+            color: #374151;
+
+            font-size: 14px;
+
+            font-weight: 600;
+        }
+
+        input {
+            width: 100%;
+
+            padding: 13px;
+
+            border: 1px solid #cbd5e1;
+
+            border-radius: 10px;
+
+            outline: none;
+
+            font-size: 14px;
+        }
+
+        input:focus {
+            border-color: #2563eb;
+
+            box-shadow:
+                0 0 0 3px rgba(37, 99, 235, 0.10);
+        }
+
+        .register-btn {
+            width: 100%;
+
+            margin-top: 8px;
+
+            padding: 14px;
+
+            border: none;
+
+            border-radius: 10px;
+
+            background: #2563eb;
+
+            color: white;
+
+            font-size: 15px;
+
+            font-weight: bold;
+
+            cursor: pointer;
+        }
+
+        .register-btn:hover {
+            background: #1d4ed8;
+        }
+
+        .form-status {
+            margin-top: 12px;
+            color: #374151;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .form-status.is-error { color: #b91c1c; }
+        .form-status.is-success { color: #087452; }
+
+        .back {
+            text-align: center;
+
+            margin-top: 18px;
+        }
+
+        .back a {
+            color: #2563eb;
+
+            text-decoration: none;
+
+            font-size: 14px;
+
+            cursor: pointer;
+        }
+
+        .back a:hover {
+            text-decoration: underline;
+        }
+
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <!-- Header -->
+
+        <div class="header">
+
+            <h1>
+                COLLEGE PLACEMENT<br>
+                MANAGEMENT SYSTEM
+            </h1>
+
+            <div class="icon">
+                🏢
+            </div>
+
+            <div class="subtitle">
+                Company Registration
+            </div>
+
+        </div>
+
+
+        <h2>
+            Create Company Account
+        </h2>
+
+
+        <!-- Registration Form -->
+
+        <form id="companyForm">
+
+            <div class="form-group">
+
+                <label>
+                    Company Name
+                </label>
+
+                <input
+                    type="text"
+                    id="companyName"
+                    name="company_name"
+                    placeholder="Enter company name"
+                    required
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label>
+                    Company Email
+                </label>
+
+                <input
+                    type="email"
+                    id="companyEmail"
+                    name="email"
+                    placeholder="Enter company email"
+                    required
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label>
+                    Contact Person
+                </label>
+
+                <input
+                    type="text"
+                    id="contactPerson"
+                    name="contact_person"
+                    placeholder="Enter contact person name"
+                    required
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label>
+                    Phone Number
+                </label>
+
+                <input
+                    type="tel"
+                    id="phone"
+                    name="contact_phone"
+                    placeholder="Enter phone number"
+                    required
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label>
+                    Company Address
+                </label>
+
+                <input
+                    type="text"
+                    id="address"
+                    name="location"
+                    placeholder="Enter company address"
+                    required
+                >
+
+            </div>
+
+            <div class="form-group">
+                <label>Industry</label>
+                <input type="text" id="industry" name="industry" placeholder="e.g. Information Technology" required>
+            </div>
+
+            <div class="form-group">
+                <label>Company Description</label>
+                <input type="text" id="companyDescription" name="company_description" placeholder="Brief company description">
+            </div>
+
+
+            <div class="form-group">
+
+                <label>
+                    Password
+                </label>
+
+                <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    placeholder="Create password"
+                    required
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label>
+                    Confirm Password
+                </label>
+
+                <input
+                    type="password"
+                    id="confirmPassword"
+                    name="password_confirm"
+                    placeholder="Confirm password"
+                    required
+                >
+
+            </div>
+
+
+            <p class="form-status" id="company-registration-page-status" role="status" aria-live="polite"></p>
+
+            <button
+                type="submit"
+                class="register-btn">
+
+                Create Company Account
+
+            </button>
+
+        </form>
+
+
+        <!-- Back to Login -->
+
+        <div class="back">
+
+            <a href="index.html">
+                ← Back to Sign In
+            </a>
+
+        </div>
+
+    </div>
+
+
+    <script src="js/script.js"></script>
+
+</body>
+
+</html>

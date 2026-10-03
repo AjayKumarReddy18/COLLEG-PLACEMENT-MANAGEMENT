@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Student dashboard for the College Placement Management System">
+    <title>Student Dashboard | College Placement Management System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="student-dashboard-body">
+    <div class="app-shell">
+        <aside class="sidebar" id="sidebar">
+            <div class="brand-box">
+                <div class="brand-mark">CP</div>
+                <div class="brand-copy">
+                    <span>College Placement</span>
+                    <small>Management</small>
+                </div>
+            </div>
+
+            <nav class="side-nav" aria-label="Student navigation">
+                <button class="nav-item is-active" type="button" data-section="overview">
+                    <span class="nav-icon">▣</span>
+                    <span>Dashboard</span>
+                </button>
+                <button class="nav-item" type="button" data-section="profile-section">
+                    <span class="nav-icon">◉</span>
+                    <span>My Profile</span>
+                </button>
+                <button class="nav-item" type="button" data-section="jobs-section">
+                    <span class="nav-icon">◫</span>
+                    <span>Available Jobs</span>
+                </button>
+                <button class="nav-item" type="button" data-section="companies-section">
+                    <span class="nav-icon">◈</span>
+                    <span>Companies</span>
+                </button>
+                <button class="nav-item" type="button" data-section="applications-section">
+                    <span class="nav-icon">▤</span>
+                    <span>My Applications</span>
+                </button>
+                <button class="nav-item" type="button" data-section="interviews-section">
+                    <span class="nav-icon">◌</span>
+                    <span>Interviews</span>
+                </button>
+                <button class="nav-item" type="button" data-section="placement-section">
+                    <span class="nav-icon">⬢</span>
+                    <span>Offers</span>
+                </button>
+                <button class="nav-item" type="button" data-section="notifications-section">
+                    <span class="nav-icon">!</span>
+                    <span>Notifications</span>
+                </button>
+                <button class="nav-item" type="button" data-section="profile-section">
+                    <span class="nav-icon">⚙</span>
+                    <span>Settings</span>
+                </button>
+            </nav>
+
+            <button class="sidebar-logout" type="button" data-action="logout">Logout</button>
+        </aside>
+
+        <div class="content-area">
+            <header class="topbar">
+                <button class="mobile-menu-toggle" type="button" aria-label="Open menu" aria-expanded="false">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+
+                <div>
+                    <p class="topbar-label">Student portal</p>
+                    <h1>Student Dashboard</h1>
+                </div>
+
+                <div class="topbar-actions">
+                    <button class="notification-button" type="button" data-section="notifications-section" aria-label="Notifications">
+                        🔔
+                        <span class="notification-badge" id="student-notification-badge" hidden></span>
+                    </button>
+
+                    <div class="user-pill">
+                        <div class="user-avatar" id="student-avatar">--</div>
+                        <div class="user-meta">
+                            <strong id="student-name-display">Loading...</strong>
+                            <span id="student-course-display">Loading profile...</span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main class="dashboard-main">
+                <section class="stats-grid" id="overview">
+                    <article class="stat-card">
+                        <div class="stat-card-header">
+                            <span class="stat-label">Available Jobs</span>
+                            <span class="stat-icon blue">📄</span>
+                        </div>
+                        <strong class="stat-value" id="stat-jobs">Loading...</strong>
+                        <small class="stat-meta">Open opportunities</small>
+                    </article>
+
+                    <article class="stat-card">
+                        <div class="stat-card-header">
+                            <span class="stat-label">Applied Jobs</span>
+                            <span class="stat-icon green">✓</span>
+                        </div>
+                        <strong class="stat-value" id="stat-applied">Loading...</strong>
+                        <small class="stat-meta">Applications sent</small>
+                    </article>
+
+                    <article class="stat-card">
+                        <div class="stat-card-header">
+                            <span class="stat-label">Shortlisted</span>
+                            <span class="stat-icon orange">★</span>
+                        </div>
+                        <strong class="stat-value" id="stat-shortlisted">Loading...</strong>
+                        <small class="stat-meta">Progressing forward</small>
+                    </article>
+
+                    <article class="stat-card">
+                        <div class="stat-card-header">
+                            <span class="stat-label">Interviews</span>
+                            <span class="stat-icon purple">📅</span>
+                        </div>
+                        <strong class="stat-value" id="stat-interviews">Loading...</strong>
+                        <small class="stat-meta">Scheduled rounds</small>
+                    </article>
+
+                    <article class="stat-card placement-card">
+                        <div class="stat-card-header">
+                            <span class="stat-label">Placement Status</span>
+                            <span class="stat-icon coral">◎</span>
+                        </div>
+                        <strong class="stat-value" id="stat-placement">Loading...</strong>
+                        <small class="stat-meta" id="stat-placement-meta">Loading placement status...</small>
+                    </article>
+                </section>
+
+                <section class="panel" id="jobs-section">
+                    <div class="panel-header">
+                        <div>
+                            <p class="section-kicker">Recruitment</p>
+                            <h2>Available Jobs</h2>
+                        </div>
+                        <button class="secondary-button" type="button">View All</button>
+                    </div>
+
+                    <div class="jobs-grid" id="job-list"></div>
+                </section>
+
+                <section class="panel" id="companies-section">
+                    <div class="panel-header">
+                        <div>
+                            <p class="section-kicker">Partners</p>
+                            <h2>Available Companies</h2>
+                        </div>
+                    </div>
+                    <div class="jobs-grid" id="student-company-list"></div>
+                </section>
+
+                <div class="bottom-layout">
+                    <section class="panel" id="applications-section">
+                        <div class="panel-header">
+                            <div>
+                                <p class="section-kicker">Applications</p>
+                                <h2>Recent Applications</h2>
+                            </div>
+                        </div>
+
+                        <div class="table-wrap">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Company</th>
+                                        <th>Position</th>
+                                        <th>Applied</th>
+                                        <th>Status</th>
+                                        <th>Interview</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="applications-table-body"></tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <section class="panel" id="interviews-section">
+                        <div class="panel-header">
+                            <div>
+                                <p class="section-kicker">Schedule</p>
+                                <h2>Upcoming Interviews</h2>
+                            </div>
+                        </div>
+
+                        <div class="interview-list" id="interview-list"></div>
+                    </section>
+
+                    <aside class="panel profile-panel" id="profile-section">
+                        <div class="panel-header compact">
+                            <div>
+                                <p class="section-kicker">Profile</p>
+                                <h2>Student Summary</h2>
+                            </div>
+                            <button class="secondary-button small" type="button">Edit Profile</button>
+                        </div>
+
+                        <div class="profile-summary">
+                            <div class="profile-row">
+                                <span class="profile-label">Name</span>
+                                <strong id="profile-name">Loading...</strong>
+                            </div>
+                            <div class="profile-row">
+                                <span class="profile-label">Student ID</span>
+                                <strong id="profile-student-id">Loading...</strong>
+                            </div>
+                            <div class="profile-row">
+                                <span class="profile-label">Email</span>
+                                <strong id="profile-email">Loading...</strong>
+                            </div>
+                            <div class="profile-row">
+                                <span class="profile-label">Phone</span>
+                                <strong id="profile-phone">Loading...</strong>
+                            </div>
+                            <div class="profile-row">
+                                <span class="profile-label">Department</span>
+                                <strong id="profile-department">Loading...</strong>
+                            </div>
+                            <div class="profile-row">
+                                <span class="profile-label">Course</span>
+                                <strong id="profile-course">Loading...</strong>
+                            </div>
+                            <div class="profile-row">
+                                <span class="profile-label">Year</span>
+                                <strong id="profile-year">Loading...</strong>
+                            </div>
+                            <div class="profile-row">
+                                <span class="profile-label">CGPA</span>
+                                <strong id="profile-cgpa">Loading...</strong>
+                            </div>
+                            <div class="profile-row">
+                                <span class="profile-label">Student Status</span>
+                                <strong id="profile-student-status">Loading...</strong>
+                            </div>
+                            <div class="profile-row">
+                                <span class="profile-label">Skills</span>
+                                <strong id="profile-skills">Loading...</strong>
+                            </div>
+                            <div class="profile-row">
+                                <span class="profile-label">Resume Status</span>
+                                <strong class="status-positive" id="profile-resume-status">Loading...</strong>
+                            </div>
+                        </div>
+                    </aside>
+                </div>
+
+                <section class="panel placement-status-panel" id="placement-section">
+                    <div class="panel-header">
+                        <div>
+                            <p class="section-kicker">Offers</p>
+                            <h2>Placement Status</h2>
+                        </div>
+                    </div>
+                    <div class="offer-list" id="offer-list"></div>
+                </section>
+
+                <section class="panel" id="notifications-section">
+                    <div class="panel-header">
+                        <div>
+                            <p class="section-kicker">Updates</p>
+                            <h2>Notifications</h2>
+                        </div>
+                    </div>
+                    <div class="notification-list" id="student-notifications-list"></div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <div class="modal-backdrop" id="job-modal" aria-hidden="true">
+        <div class="job-modal" role="dialog" aria-modal="true" aria-labelledby="job-modal-title">
+            <button class="modal-close" type="button" id="job-modal-close" aria-label="Close details">×</button>
+            <div class="modal-body">
+                <p class="section-kicker">Opportunity</p>
+                <h3 id="job-modal-title">Job Title</h3>
+                <div class="modal-meta" id="job-modal-meta"></div>
+                <div class="modal-section">
+                    <h4>About the role</h4>
+                    <p id="job-modal-description"></p>
+                </div>
+                <div class="modal-section">
+                    <h4>Eligibility</h4>
+                    <ul id="job-modal-eligibility"></ul>
+                </div>
+                <div class="modal-section">
+                    <h4>Required skills</h4>
+                    <div class="tag-list" id="job-modal-skills"></div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="secondary-button" type="button" id="job-modal-cancel">Close</button>
+                <button class="primary-button" type="button" id="job-modal-apply">Apply Now</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-backdrop" id="edit-profile-modal" aria-hidden="true">
+        <div class="job-modal" role="dialog" aria-modal="true" aria-labelledby="edit-profile-title">
+            <button class="modal-close" type="button" id="edit-profile-close" aria-label="Close profile editor">×</button>
+            <div class="modal-body">
+                <p class="section-kicker">Profile</p>
+                <h3 id="edit-profile-title">Edit Profile</h3>
+
+                <form id="edit-profile-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="edit-department">Department</label>
+                            <input type="text" id="edit-department" name="department" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-course">Course</label>
+                            <input type="text" id="edit-course" name="course" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="edit-year">Year</label>
+                            <input type="number" id="edit-year" name="year" min="1" max="8" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-cgpa">CGPA</label>
+                            <input type="number" id="edit-cgpa" name="cgpa" min="0" max="10" step="0.01" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit-skills">Skills</label>
+                        <textarea id="edit-skills" name="skills" rows="4" required></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit-resume">Resume</label>
+                        <input type="file" id="edit-resume" name="resume" accept=".pdf,.doc,.docx">
+                    </div>
+
+                    <div id="edit-profile-status" class="form-status"></div>
+
+                    <div class="modal-actions">
+                        <button class="secondary-button" type="button" id="edit-profile-cancel">Cancel</button>
+                        <button class="primary-button" type="submit">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script src="js/script.js"></script>
+</body>
+</html>
+

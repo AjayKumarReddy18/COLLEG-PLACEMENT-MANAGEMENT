@@ -232,6 +232,15 @@ class TPOMigratedAPITests(TestCase):
             "Company documentation is verified and authentic.",
         )
 
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.company_token}")
+        company_response = self.client.get(reverse("company-profile"))
+        self.assertEqual(company_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(company_response.data["verification_status"], "APPROVED")
+        self.assertEqual(
+            company_response.data["verification_remarks"],
+            "Company documentation is verified and authentic.",
+        )
+
     def test_tpo_can_reject_pending_company(self):
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.tpo_token}")
         url = reverse("tpo-company-verify", kwargs={"pk": self.company_profile.id})

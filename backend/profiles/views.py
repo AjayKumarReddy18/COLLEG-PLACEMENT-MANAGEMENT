@@ -1,7 +1,8 @@
 from decimal import Decimal, InvalidOperation
 
+from django.contrib.auth import get_user_model
 from django.db import transaction
-from django.db.models import Avg, Count, Max
+from django.db.models import Avg, Count, Max, Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import status, views
@@ -17,6 +18,8 @@ from .models import (
     JobApplication,
     JobListing,
     JobOffer,
+    Notification,
+    PlacementDrive,
     PlacementRecord,
     StudentProfile,
 )
@@ -30,17 +33,42 @@ from .serializers import (
     JobListingSerializer,
     JobOfferCreateSerializer,
     JobOfferSerializer,
+    NotificationSerializer,
     OfferResponseSerializer,
+    PlacementDriveSerializer,
     PlacementRecordSerializer,
+    PlacementRecordStatusSerializer,
     StudentApplicationSerializer,
+    StudentCompanySerializer,
     StudentInterviewSerializer,
     StudentJobListingSerializer,
     StudentProfileSerializer,
+    TPOApplicationSerializer,
     TPOCompanySerializer,
+    TPOInterviewSerializer,
     TPOJobListingSerializer,
     TPOJobVerifySerializer,
     TPOStudentSerializer,
 )
+
+User = get_user_model()
+
+
+def create_notification(recipient, notification_type, title, message, **related_objects):
+    return Notification.objects.create(
+        recipient=recipient,
+        notification_type=notification_type,
+        title=title,
+        message=message,
+        **related_objects,
+    )
+
+
+def notify_role(role, notification_type, title, message, **related_objects):
+    return [
+        create_notification(user, notification_type, title, message, **related_objects)
+        for user in User.objects.filter(role=role, is_active=True)
+    ]
 
 
 
@@ -362,6 +390,13 @@ class CompanyJobListView(views.APIView):
         serializer = JobListingSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         job = serializer.save()
+        notify_role(
+            User.Role.TPO,
+            Notification.NotificationType.JOB_REVIEW_REQUIRED,
+            "Job awaiting review",
+            f"{request.user.company_profile.company_name} submitted {job.job_title} for review.",
+            job=job,
+        )
         return Response(
             {
                 "message": "Job listing created successfully.",
@@ -483,6 +518,43 @@ class TPOJobListView(views.APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+class TPOApplicationListView(views.APIView):
+    permission_classes = [IsAuthenticated, IsTPO]
+
+    def get(self, request):
+        applications = JobApplication.objects.select_related(
+            "student__user", "job__company"
+        ).order_by("-applied_at")
+        serializer = TPOApplicationSerializer(applications, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class TPOInterviewListView(views.APIView):
+    permission_classes = [IsAuthenticated, IsTPO]
+
+    def get(self, request):
+        interviews = Interview.objects.select_related(
+            "application__student__user",
+            "application__job__company",
+        ).order_by("scheduled_at")
+        serializer = TPOInterviewSerializer(interviews, many=True)
+        return Response(
+            serializer.data,
+            status=status.HTTP_200_OK,
+        )
+   
+class TPOOfferListView(views.APIView):
+    permission_classes = [IsAuthenticated, IsTPO]
+
+    def get(self, request):
+        offers = JobOffer.objects.select_related(
+            "application__student__user",
+            "application__job__company",
+        ).order_by("-issued_at")
+        serializer = JobOfferSerializer(offers, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
 class TPOJobVerifyView(views.APIView):
     """
     TPO endpoint to approve or reject a job listing.
@@ -500,6 +572,20 @@ class TPOJobVerifyView(views.APIView):
         serializer = TPOJobVerifySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         updated_job = serializer.update(job, serializer.validated_data)
+        if updated_job.status == JobListing.JobStatus.APPROVED:
+            student_users = User.objects.filter(
+                role=User.Role.STUDENT,
+                is_active=True,
+                student_profile__isnull=False,
+            )
+            for student_user in student_users:
+                create_notification(
+                    student_user,
+                    Notification.NotificationType.NEW_JOB,
+                    "New job available",
+                    f"{updated_job.job_title} at {updated_job.company.company_name} is now open.",
+                    job=updated_job,
+                )
         return Response(
             {
                 "message": f"Job listing status updated to '{updated_job.status}'.",
@@ -507,6 +593,26 @@ class TPOJobVerifyView(views.APIView):
             },
             status=status.HTTP_200_OK,
         )
+
+
+class StudentCompanyListView(views.APIView):
+    permission_classes = [IsAuthenticated, IsStudent]
+
+    def get(self, request):
+        companies = CompanyProfile.objects.filter(
+            verification_status=CompanyProfile.VerificationStatus.APPROVED
+        ).annotate(
+            available_jobs=Count(
+                "job_listings",
+                filter=Q(
+                    job_listings__status=JobListing.JobStatus.APPROVED,
+                    job_listings__application_deadline__gt=timezone.now(),
+                ),
+                distinct=True,
+            )
+        ).order_by("company_name")
+        serializer = StudentCompanySerializer(companies, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class StudentJobListView(views.APIView):
@@ -520,11 +626,11 @@ class StudentJobListView(views.APIView):
 
     def get(self, request):
         jobs = JobListing.objects.filter(
-            status=JobListing.JobStatus.APPROVED
+            status=JobListing.JobStatus.APPROVED,
+            application_deadline__gt=timezone.now(),
         ).select_related("company").order_by("-created_at")
         serializer = StudentJobListingSerializer(jobs, many=True, context={"request": request})
         return Response(serializer.data, status=status.HTTP_200_OK)
-
 
 class StudentJobApplyView(views.APIView):
     """
@@ -547,16 +653,22 @@ class StudentJobApplyView(views.APIView):
                 {"detail": "Please create a student profile before applying for jobs."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
         student = request.user.student_profile
+
         job = get_object_or_404(JobListing, pk=pk)
 
         # 1. Job must be APPROVED
         if job.status != JobListing.JobStatus.APPROVED:
             return Response(
-                {"detail": f"You can only apply to approved job listings. This job is currently '{job.get_status_display()}'."},
+                {
+                    "detail": (
+                        "You can only apply to approved job listings. "
+                        f"This job is currently '{job.get_status_display()}'."
+                    )
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
         # 2. Deadline check
         if timezone.now() > job.application_deadline:
             return Response(
@@ -611,6 +723,22 @@ class StudentJobApplyView(views.APIView):
             )
 
         application = JobApplication.objects.create(student=student, job=job)
+        create_notification(
+            student.user,
+            Notification.NotificationType.APPLICATION_SUBMITTED,
+            "Application submitted",
+            f"Your application for {job.job_title} was submitted.",
+            job=job,
+            application=application,
+        )
+        create_notification(
+            job.company.user,
+            Notification.NotificationType.APPLICATION_SUBMITTED,
+            "New job application",
+            f"{student.user.full_name} applied for {job.job_title}.",
+            job=job,
+            application=application,
+        )
         return Response(
             {
                 "message": "Job application submitted successfully.",
@@ -636,6 +764,66 @@ class StudentApplicationListView(views.APIView):
         ).select_related("job__company").order_by("-applied_at")
         serializer = StudentApplicationSerializer(applications, many=True, context={"request": request})
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class StudentDashboardStatsView(views.APIView):
+    """
+    Protected student-only endpoint that returns dashboard card counts
+    and placement status derived from actual backend records.
+    """
+
+    permission_classes = [IsAuthenticated, IsStudent]
+
+    def get(self, request):
+        stats = {
+            "available_jobs": 0,
+            "applied_jobs": 0,
+            "shortlisted": 0,
+            "interviews": 0,
+            "placement_status": "Not available",
+        }
+
+        if not hasattr(request.user, "student_profile"):
+            return Response(stats, status=status.HTTP_200_OK)
+
+        student = request.user.student_profile
+        applications = JobApplication.objects.filter(student=student)
+        approved_jobs_count = JobListing.objects.filter(
+            status=JobListing.JobStatus.APPROVED,
+            application_deadline__gt=timezone.now(),
+        ).count()
+        interviews_count = Interview.objects.filter(application__student=student).count()
+
+        stats["available_jobs"] = approved_jobs_count
+        stats["applied_jobs"] = applications.count()
+        stats["shortlisted"] = applications.filter(
+            status=JobApplication.ApplicationStatus.SHORTLISTED
+        ).count()
+        stats["interviews"] = interviews_count
+
+        if PlacementRecord.objects.filter(
+            student=student,
+            placement_status=PlacementRecord.PlacementStatus.PLACED,
+        ).exists():
+            stats["placement_status"] = "Placed"
+        elif PlacementRecord.objects.filter(
+            student=student,
+            placement_status=PlacementRecord.PlacementStatus.WITHDRAWN,
+        ).exists():
+            stats["placement_status"] = "Withdrawn"
+        elif JobOffer.objects.filter(
+            application__student=student,
+            status=JobOffer.OfferStatus.ACCEPTED,
+        ).exists():
+            stats["placement_status"] = "Accepted"
+        elif applications.filter(status=JobApplication.ApplicationStatus.SELECTED).exists():
+            stats["placement_status"] = "Selected"
+        elif student.cgpa and student.cgpa >= Decimal("8.00"):
+            stats["placement_status"] = "Eligible"
+        else:
+            stats["placement_status"] = "Not Eligible"
+
+        return Response(stats, status=status.HTTP_200_OK)
 
 
 # =============================================================================
@@ -671,6 +859,15 @@ class CompanyApplicationStatusView(views.APIView):
         )
         serializer.is_valid(raise_exception=True)
         updated_app = serializer.update(application, serializer.validated_data)
+        if updated_app.status == JobApplication.ApplicationStatus.SHORTLISTED:
+            create_notification(
+                updated_app.student.user,
+                Notification.NotificationType.APPLICATION_SHORTLISTED,
+                "Application shortlisted",
+                f"Your application for {updated_app.job.job_title} was shortlisted.",
+                job=updated_app.job,
+                application=updated_app,
+            )
         return Response(
             {
                 "message": f"Application status updated to '{updated_app.status}'.",
@@ -730,6 +927,15 @@ class CompanyInterviewCreateListView(views.APIView):
         serializer = InterviewSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         interview = serializer.save(application=application)
+        create_notification(
+            application.student.user,
+            Notification.NotificationType.INTERVIEW_SCHEDULED,
+            "Interview scheduled",
+            f"Round {interview.round} for {application.job.job_title} is scheduled for {interview.scheduled_at:%Y-%m-%d %H:%M}.",
+            job=application.job,
+            application=application,
+            interview=interview,
+        )
         return Response(
             {
                 "message": f"Interview Round {interview.round} scheduled successfully.",
@@ -804,10 +1010,32 @@ class StudentInterviewListView(views.APIView):
 class CompanyOfferCreateView(views.APIView):
     """
     Endpoint for Company to generate an offer for a SELECTED applicant.
-    POST /api/company/applications/<id>/offer/
+    GET/POST /api/company/applications/<id>/offer/
     """
 
     permission_classes = [IsAuthenticated, IsCompany]
+
+    def get(self, request, pk):
+        if not hasattr(request.user, "company_profile"):
+            return Response(
+                {"detail": "Company profile not found."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        application = get_object_or_404(
+            JobApplication.objects.select_related("job__company", "student__user"),
+            pk=pk,
+        )
+        if application.job.company != request.user.company_profile:
+            return Response(
+                {"detail": "You do not have permission to view an offer for another company's job."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        try:
+            offer = application.offer
+        except JobOffer.DoesNotExist:
+            return Response({"detail": "No offer has been created for this application."}, status=status.HTTP_404_NOT_FOUND)
+
+        return Response(JobOfferSerializer(offer, context={"request": request}).data, status=status.HTTP_200_OK)
 
     def post(self, request, pk):
         if not hasattr(request.user, "company_profile"):
@@ -840,6 +1068,15 @@ class CompanyOfferCreateView(views.APIView):
         serializer = JobOfferCreateSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         offer = serializer.save(application=application)
+        create_notification(
+            application.student.user,
+            Notification.NotificationType.OFFER_ISSUED,
+            "Job offer received",
+            f"{application.job.company.company_name} issued an offer for {application.job.job_title}.",
+            job=application.job,
+            application=application,
+            offer=offer,
+        )
         return Response(
             {
                 "message": "Job offer issued successfully.",
@@ -910,7 +1147,7 @@ class StudentOfferRespondView(views.APIView):
 
             if new_status == JobOffer.OfferStatus.ACCEPTED:
                 # Ensure no duplicate placement record exists
-                PlacementRecord.objects.get_or_create(
+                placement_record, created = PlacementRecord.objects.get_or_create(
                     application=offer.application,
                     offer=offer,
                     defaults={
@@ -922,6 +1159,37 @@ class StudentOfferRespondView(views.APIView):
                         "placement_status": PlacementRecord.PlacementStatus.PLACED,
                     },
                 )
+                if created:
+                    create_notification(
+                        request.user,
+                        Notification.NotificationType.PLACEMENT_CONFIRMED,
+                        "Placement confirmed",
+                        f"Your placement with {offer.application.job.company.company_name} has been confirmed.",
+                        job=offer.application.job,
+                        application=offer.application,
+                        offer=offer,
+                        placement_record=placement_record,
+                    )
+                    create_notification(
+                        offer.application.job.company.user,
+                        Notification.NotificationType.PLACEMENT_CONFIRMED,
+                        "Student placement confirmed",
+                        f"{offer.application.student.user.full_name} accepted the offer for {offer.application.job.job_title}.",
+                        job=offer.application.job,
+                        application=offer.application,
+                        offer=offer,
+                        placement_record=placement_record,
+                    )
+                    notify_role(
+                        User.Role.TPO,
+                        Notification.NotificationType.PLACEMENT_CONFIRMED,
+                        "Placement confirmed",
+                        f"{offer.application.student.user.full_name} was placed with {offer.application.job.company.company_name}.",
+                        job=offer.application.job,
+                        application=offer.application,
+                        offer=offer,
+                        placement_record=placement_record,
+                    )
 
         return Response(
             {
@@ -1004,4 +1272,99 @@ class TPOPlacementSummaryView(views.APIView):
         )
 
 
+class TPOPlacementRecordUpdateView(views.APIView):
+    permission_classes = [IsAuthenticated, IsTPO]
 
+    def patch(self, request, pk):
+        record = get_object_or_404(
+            PlacementRecord.objects.select_related("student__user", "company", "job"),
+            pk=pk,
+        )
+        serializer = PlacementRecordStatusSerializer(record, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        updated_record = serializer.save()
+        create_notification(
+            updated_record.student.user,
+            Notification.NotificationType.PLACEMENT_STATUS_UPDATED,
+            "Placement status updated",
+            f"Your placement status for {updated_record.job.job_title} is now {updated_record.placement_status}.",
+            placement_record=updated_record,
+        )
+        create_notification(
+            updated_record.company.user,
+            Notification.NotificationType.PLACEMENT_STATUS_UPDATED,
+            "Student placement status updated",
+            f"{updated_record.student.user.full_name}'s placement status for {updated_record.job.job_title} is now {updated_record.placement_status}.",
+            placement_record=updated_record,
+        )
+        return Response(
+            {
+                "message": "Placement status updated successfully.",
+                "placement": PlacementRecordSerializer(updated_record).data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class TPOPlacementDriveListCreateView(views.APIView):
+    permission_classes = [IsAuthenticated, IsTPO]
+
+    def get(self, request):
+        drives = PlacementDrive.objects.select_related("company", "job").all()
+        serializer = PlacementDriveSerializer(drives, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        serializer = PlacementDriveSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        drive = serializer.save()
+        return Response(
+            {"message": "Placement drive created successfully.", "drive": PlacementDriveSerializer(drive).data},
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class TPOPlacementDriveDetailView(views.APIView):
+    permission_classes = [IsAuthenticated, IsTPO]
+
+    def patch(self, request, pk):
+        drive = get_object_or_404(PlacementDrive.objects.select_related("company", "job"), pk=pk)
+        serializer = PlacementDriveSerializer(drive, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        drive = serializer.save()
+        return Response(
+            {"message": "Placement drive updated successfully.", "drive": PlacementDriveSerializer(drive).data},
+            status=status.HTTP_200_OK,
+        )
+
+
+class NotificationListView(views.APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        notifications = Notification.objects.filter(recipient=request.user)
+        return Response(
+            {
+                "notifications": NotificationSerializer(notifications, many=True).data,
+                "unread_count": notifications.filter(is_read=False).count(),
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class NotificationReadView(views.APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, pk):
+        notification = get_object_or_404(Notification, pk=pk, recipient=request.user)
+        notification.is_read = True
+        notification.save(update_fields=["is_read"])
+        return Response(NotificationSerializer(notification).data, status=status.HTTP_200_OK)
+
+
+class NotificationReadAllView(views.APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request):
+        Notification.objects.filter(recipient=request.user, is_read=False).update(is_read=True)
+        return Response({"message": "Notifications marked as read."}, status=status.HTTP_200_OK)

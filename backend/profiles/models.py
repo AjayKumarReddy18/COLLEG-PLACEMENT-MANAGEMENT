@@ -534,3 +534,83 @@ class PlacementRecord(models.Model):
         return f"{student_name} placed at {self.company.company_name} - CTC: {self.ctc}"
 
 
+class PlacementDrive(models.Model):
+    class DriveStatus(models.TextChoices):
+        DRAFT = "DRAFT", "Draft"
+        PUBLISHED = "PUBLISHED", "Published"
+        CLOSED = "CLOSED", "Closed"
+
+    company = models.ForeignKey(
+        CompanyProfile,
+        on_delete=models.CASCADE,
+        related_name="placement_drives",
+    )
+    job = models.ForeignKey(
+        JobListing,
+        on_delete=models.CASCADE,
+        related_name="placement_drives",
+    )
+    drive_date = models.DateField()
+    eligible_departments = models.JSONField(default=list, blank=True)
+    eligible_courses = models.JSONField(default=list, blank=True)
+    minimum_cgpa = models.DecimalField(
+        max_digits=4,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        validators=[MinValueValidator(Decimal("0.00")), MaxValueValidator(Decimal("10.00"))],
+    )
+    application_deadline = models.DateTimeField()
+    status = models.CharField(
+        max_length=20,
+        choices=DriveStatus.choices,
+        default=DriveStatus.DRAFT,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["drive_date", "-created_at"]
+
+    def __str__(self):
+        return f"{self.job.job_title} drive for {self.company.company_name}"
+
+
+class Notification(models.Model):
+    class NotificationType(models.TextChoices):
+        JOB_REVIEW_REQUIRED = "JOB_REVIEW_REQUIRED", "Job review required"
+        NEW_JOB = "NEW_JOB", "New job available"
+        APPLICATION_SUBMITTED = "APPLICATION_SUBMITTED", "Application submitted"
+        APPLICATION_SHORTLISTED = "APPLICATION_SHORTLISTED", "Application shortlisted"
+        INTERVIEW_SCHEDULED = "INTERVIEW_SCHEDULED", "Interview scheduled"
+        OFFER_ISSUED = "OFFER_ISSUED", "Offer issued"
+        PLACEMENT_CONFIRMED = "PLACEMENT_CONFIRMED", "Placement confirmed"
+        PLACEMENT_STATUS_UPDATED = "PLACEMENT_STATUS_UPDATED", "Placement status updated"
+
+    recipient = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="placement_notifications",
+    )
+    notification_type = models.CharField(max_length=32, choices=NotificationType.choices)
+    title = models.CharField(max_length=160)
+    message = models.TextField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    job = models.ForeignKey(JobListing, null=True, blank=True, on_delete=models.SET_NULL)
+    application = models.ForeignKey(JobApplication, null=True, blank=True, on_delete=models.SET_NULL)
+    interview = models.ForeignKey(Interview, null=True, blank=True, on_delete=models.SET_NULL)
+    offer = models.ForeignKey(JobOffer, null=True, blank=True, on_delete=models.SET_NULL)
+    placement_record = models.ForeignKey(
+        PlacementRecord,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.get_notification_type_display()} for {self.recipient.email}"
+
+

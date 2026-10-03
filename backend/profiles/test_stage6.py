@@ -14,6 +14,7 @@ from profiles.models import (
     JobApplication,
     JobListing,
     JobOffer,
+    Notification,
     PlacementRecord,
     StudentProfile,
 )
@@ -180,6 +181,25 @@ class Stage6WorkflowAPITests(TestCase):
         self.app_1.refresh_from_db()
         self.assertEqual(self.app_1.status, JobApplication.ApplicationStatus.SHORTLISTED)
 
+    def test_company_status_update_is_visible_to_student(self):
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.company_token_a}")
+        response = self.client.patch(
+            reverse("company-application-status", kwargs={"pk": self.app_1.id}),
+            {"status": "SHORTLISTED"},
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(Notification.objects.filter(
+            recipient=self.student_user_1,
+            notification_type=Notification.NotificationType.APPLICATION_SHORTLISTED,
+            application=self.app_1,
+        ).exists())
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.student_token_1}")
+        student_response = self.client.get(reverse("student-application-list"))
+        self.assertEqual(student_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(student_response.data), 1)
+        self.assertEqual(student_response.data[0]["status"], "SHORTLISTED")
+
     def test_company_can_reject_applicant(self):
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.company_token_a}")
         url = reverse("company-application-status", kwargs={"pk": self.app_1.id})
@@ -258,6 +278,37 @@ class Stage6WorkflowAPITests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data["interview"]["round"], 1)
         self.assertEqual(response.data["interview"]["interview_type"], "ONLINE")
+
+    def test_company_scheduled_interview_is_visible_to_student(self):
+        self.app_1.status = JobApplication.ApplicationStatus.SHORTLISTED
+        self.app_1.save()
+        future_time = timezone.now() + timedelta(days=5)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.company_token_a}")
+        response = self.client.post(
+            reverse("company-application-interviews", kwargs={"pk": self.app_1.id}),
+            {
+                "round": 1,
+                "interview_type": "ONLINE",
+                "scheduled_at": future_time.isoformat(),
+                "meeting_link": "https://meet.google.com/cross-role-round",
+                "interviewer": "Engineering Panel",
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(Notification.objects.filter(
+            recipient=self.student_user_1,
+            notification_type=Notification.NotificationType.INTERVIEW_SCHEDULED,
+            application=self.app_1,
+        ).exists())
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.student_token_1}")
+        student_response = self.client.get(reverse("student-interview-list"))
+        self.assertEqual(student_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(student_response.data), 1)
+        self.assertEqual(student_response.data[0]["company_name"], "Apex Corp")
+        self.assertEqual(student_response.data[0]["job_title"], self.job_a.job_title)
+        self.assertEqual(student_response.data[0]["meeting_link"], "https://meet.google.com/cross-role-round")
 
     def test_company_can_schedule_offline_interview(self):
         self.app_1.status = JobApplication.ApplicationStatus.SHORTLISTED
@@ -439,6 +490,173 @@ class Stage6WorkflowAPITests(TestCase):
         self.assertEqual(response.data["offer"]["offer_letter_number"], "APEX-2026-SDE-001")
         self.assertEqual(response.data["offer"]["status"], "PENDING")
 
+    def test_company_offer_is_visible_to_student(self):
+        self.app_1.status = JobApplication.ApplicationStatus.SELECTED
+        self.app_1.save()
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.company_token_a}")
+        response = self.client.post(
+            reverse("company-application-offer", kwargs={"pk": self.app_1.id}),
+            {
+                "offer_letter_number": "APEX-CROSS-ROLE-001",
+                "ctc": "1500000.00",
+                "joining_date": (timezone.now() + timedelta(days=60)).date().isoformat(),
+                "offer_details": "Placement workflow integration test",
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(Notification.objects.filter(
+            recipient=self.student_user_1,
+            notification_type=Notification.NotificationType.OFFER_ISSUED,
+            application=self.app_1,
+        ).exists())
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.student_token_1}")
+        student_response = self.client.get(reverse("student-offer-list"))
+        self.assertEqual(student_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(student_response.data), 1)
+        self.assertEqual(student_response.data[0]["offer_letter_number"], "APEX-CROSS-ROLE-001")
+        self.assertEqual(student_response.data[0]["company_name"], "Apex Corp")
+
+    def test_company_can_view_own_offer_but_not_another_company_offer(self):
+        self.app_1.status = JobApplication.ApplicationStatus.SELECTED
+        self.app_1.save()
+        JobOffer.objects.create(
+            application=self.app_1,
+            offer_letter_number="APEX-VIEW-001",
+            ctc=Decimal("1500000.00"),
+            joining_date=(timezone.now() + timedelta(days=60)).date(),
+        )
+
+        url = reverse("company-application-offer", kwargs={"pk": self.app_1.id})
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.company_token_a}")
+        own_response = self.client.get(url)
+        self.assertEqual(own_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(own_response.data["offer_letter_number"], "APEX-VIEW-001")
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.company_token_b}")
+        other_response = self.client.get(url)
+        self.assertEqual(other_response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_tpo_can_list_applications_interviews_and_offers_only(self):
+        self.app_1.status = JobApplication.ApplicationStatus.SELECTED
+        self.app_1.save()
+        Interview.objects.create(
+            application=self.app_1,
+            round=1,
+            scheduled_at=timezone.now() + timedelta(days=3),
+            interview_type=Interview.InterviewType.ONLINE,
+            meeting_link="https://meet.example.com/tpo-audit",
+        )
+        JobOffer.objects.create(
+            application=self.app_1,
+            offer_letter_number="APEX-TPO-AUDIT-001",
+            ctc=Decimal("1500000.00"),
+            joining_date=(timezone.now() + timedelta(days=60)).date(),
+        )
+
+        endpoints = [
+            "tpo-application-list",
+            "tpo-interview-list",
+            "tpo-offer-list",
+        ]
+        for endpoint in endpoints:
+            with self.subTest(endpoint=endpoint):
+                url = reverse(endpoint)
+                self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.tpo_token}")
+                response = self.client.get(url)
+                self.assertEqual(response.status_code, status.HTTP_200_OK)
+                self.assertTrue(response.data)
+
+                self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.student_token_1}")
+                self.assertEqual(self.client.get(url).status_code, status.HTTP_403_FORBIDDEN)
+
+                self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.company_token_a}")
+                self.assertEqual(self.client.get(url).status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_notifications_are_scoped_to_recipient_and_can_be_marked_read(self):
+        own_notification = Notification.objects.create(
+            recipient=self.student_user_1,
+            notification_type=Notification.NotificationType.APPLICATION_SHORTLISTED,
+            title="Application shortlisted",
+            message="Your application was shortlisted.",
+        )
+        other_notification = Notification.objects.create(
+            recipient=self.student_user_2,
+            notification_type=Notification.NotificationType.OFFER_ISSUED,
+            title="Offer issued",
+            message="An offer was issued.",
+        )
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.student_token_1}")
+        response = self.client.get(reverse("notification-list"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["unread_count"], 1)
+        self.assertEqual([item["id"] for item in response.data["notifications"]], [own_notification.id])
+
+        forbidden = self.client.patch(reverse("notification-read", kwargs={"pk": other_notification.id}))
+        self.assertEqual(forbidden.status_code, status.HTTP_404_NOT_FOUND)
+
+        read_response = self.client.patch(reverse("notification-read", kwargs={"pk": own_notification.id}))
+        self.assertEqual(read_response.status_code, status.HTTP_200_OK)
+        self.assertTrue(read_response.data["is_read"])
+
+        Notification.objects.create(
+            recipient=self.student_user_1,
+            notification_type=Notification.NotificationType.NEW_JOB,
+            title="New job available",
+            message="A new job is available.",
+        )
+        read_all_response = self.client.patch(reverse("notification-read-all"))
+        self.assertEqual(read_all_response.status_code, status.HTTP_200_OK)
+        unread_response = self.client.get(reverse("notification-list"))
+        self.assertEqual(unread_response.data["unread_count"], 0)
+
+    def test_tpo_can_update_existing_placement_and_student_sees_status(self):
+        self.app_1.status = JobApplication.ApplicationStatus.APPLIED
+        self.app_1.save()
+        offer = JobOffer.objects.create(
+            application=self.app_1,
+            offer_letter_number="APEX-STATUS-UPDATE-001",
+            ctc=Decimal("1500000.00"),
+            joining_date=(timezone.now() + timedelta(days=60)).date(),
+        )
+        placement = PlacementRecord.objects.create(
+            student=self.student_profile_1,
+            company=self.company_profile_a,
+            job=self.job_a,
+            application=self.app_1,
+            offer=offer,
+            joining_date=offer.joining_date,
+            ctc=offer.ctc,
+        )
+
+        placement_update_url = reverse("tpo-placement-update", kwargs={"pk": placement.id})
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.student_token_1}")
+        denied_response = self.client.patch(
+            placement_update_url,
+            {"placement_status": "WITHDRAWN"},
+            format="json",
+        )
+        self.assertEqual(denied_response.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.tpo_token}")
+        response = self.client.patch(
+            placement_update_url,
+            {"placement_status": "WITHDRAWN"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        placement.refresh_from_db()
+        self.assertEqual(placement.placement_status, PlacementRecord.PlacementStatus.WITHDRAWN)
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.student_token_1}")
+        stats_response = self.client.get(reverse("student-dashboard-stats"))
+        self.assertEqual(stats_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(stats_response.data["placement_status"], "Withdrawn")
+        notifications = self.client.get(reverse("notification-list"))
+        self.assertEqual(notifications.data["unread_count"], 1)
+
     def test_cannot_issue_offer_for_unselected_applicant(self):
         # app_1 is SHORTLISTED, not SELECTED
         self.app_1.status = JobApplication.ApplicationStatus.SHORTLISTED
@@ -545,6 +763,21 @@ class Stage6WorkflowAPITests(TestCase):
         self.assertEqual(placement.ctc, Decimal("1500000.00"))
         self.assertEqual(placement.joining_date, joining_date)
         self.assertEqual(placement.placement_status, PlacementRecord.PlacementStatus.PLACED)
+        self.assertTrue(Notification.objects.filter(
+            recipient=self.student_user_1,
+            notification_type=Notification.NotificationType.PLACEMENT_CONFIRMED,
+            placement_record=placement,
+        ).exists())
+        self.assertTrue(Notification.objects.filter(
+            recipient=self.company_user_a,
+            notification_type=Notification.NotificationType.PLACEMENT_CONFIRMED,
+            placement_record=placement,
+        ).exists())
+        self.assertTrue(Notification.objects.filter(
+            recipient=self.tpo_user,
+            notification_type=Notification.NotificationType.PLACEMENT_CONFIRMED,
+            placement_record=placement,
+        ).exists())
 
     def test_student_can_reject_offer(self):
         self.app_1.status = JobApplication.ApplicationStatus.SELECTED

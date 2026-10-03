@@ -2,14 +2,17 @@ import io
 import os
 import tempfile
 
+from datetime import timedelta
+
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from profiles.models import CompanyProfile, StudentProfile
+from profiles.models import CompanyProfile, Interview, JobApplication, JobListing, StudentProfile
 
 User = get_user_model()
 
@@ -290,6 +293,14 @@ class CompanyProfileAPITests(TestCase):
         self.assertEqual(response.data["profile"]["company_name"], "TechCorp Pvt Ltd")
         self.assertEqual(response.data["profile"]["verification_status"], "PENDING")
 
+    def test_company_profile_rejects_invalid_contact_email(self):
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.company_token}")
+        payload = self.profile_payload.copy()
+        payload["contact_email"] = "student..name@gmail.com"
+        response = self.client.post(self.url, payload)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("contact_email", response.data)
+
     def test_company_get_own_profile(self):
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.company_token}")
         self.client.post(self.url, self.profile_payload)
@@ -362,3 +373,100 @@ class CompanyProfileAPITests(TestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.tpo_token}")
         response = self.client.get(reverse("student-profile"))
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+
+@override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
+class StudentDashboardStatsAPITests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+
+        self.student = User.objects.create_user(
+            email="stats.student@college.edu",
+            student_id="23CS111",
+            password="StudentPass123!",
+            first_name="Stats",
+            last_name="Student",
+            phone_number="9876543211",
+            role=User.Role.STUDENT,
+        )
+        self.student_profile = StudentProfile.objects.create(
+            user=self.student,
+            department="Computer Science",
+            course="B.Tech",
+            year=4,
+            cgpa="8.70",
+            skills="Python, Django",
+        )
+        self.student_token = _get_token(self.client, "23CS111", "StudentPass123!")
+
+        self.company_user = User.objects.create_user(
+            email="stats.company@company.com",
+            password="CompanyPass123!",
+            first_name="Stats",
+            last_name="Company",
+            role=User.Role.COMPANY,
+        )
+        self.company_profile = CompanyProfile.objects.create(
+            user=self.company_user,
+            company_name="Stats Corp",
+            industry="Information Technology",
+            location="Bengaluru",
+            contact_email="careers@statscorp.com",
+        )
+
+    def test_student_dashboard_stats_uses_real_counts_for_logged_in_student(self):
+        job_1 = JobListing.objects.create(
+            company=self.company_profile,
+            job_title="Python Developer",
+            description="Backend role",
+            job_type=JobListing.JobType.FULL_TIME,
+            salary="1200000",
+            job_location="Bengaluru",
+            minimum_cgpa="7.00",
+            eligible_departments=["Computer Science"],
+            eligible_courses=["B.Tech"],
+            application_deadline=timezone.now() + timedelta(days=20),
+            status=JobListing.JobStatus.APPROVED,
+        )
+        job_2 = JobListing.objects.create(
+            company=self.company_profile,
+            job_title="Data Analyst",
+            description="Data role",
+            job_type=JobListing.JobType.FULL_TIME,
+            salary="1100000",
+            job_location="Hyderabad",
+            minimum_cgpa="7.00",
+            eligible_departments=["Computer Science"],
+            eligible_courses=["B.Tech"],
+            application_deadline=timezone.now() + timedelta(days=30),
+            status=JobListing.JobStatus.APPROVED,
+        )
+        JobListing.objects.create(
+            company=self.company_profile,
+            job_title="Expired Role",
+            description="Deadline has passed",
+            job_location="Bengaluru",
+            application_deadline=timezone.now() - timedelta(days=1),
+            status=JobListing.JobStatus.APPROVED,
+        )
+
+        app_1 = JobApplication.objects.create(student=self.student_profile, job=job_1)
+        app_2 = JobApplication.objects.create(student=self.student_profile, job=job_2)
+        app_1.status = JobApplication.ApplicationStatus.SHORTLISTED
+        app_1.save()
+        Interview.objects.create(
+            application=app_1,
+            round=1,
+            scheduled_at=timezone.now() + timedelta(days=2),
+            interview_type=Interview.InterviewType.ONLINE,
+            meeting_link="https://meet.example.com/round1",
+        )
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.student_token}")
+        response = self.client.get(reverse("student-dashboard-stats"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["available_jobs"], 2)
+        self.assertEqual(response.data["applied_jobs"], 2)
+        self.assertEqual(response.data["shortlisted"], 1)
+        self.assertEqual(response.data["interviews"], 1)

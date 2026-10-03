@@ -1,0 +1,1347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>College Placement Management System</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            min-height: 100vh;
+            background:
+                linear-gradient(135deg, #eef4ff 0%, #f8fbff 50%, #e8f0ff 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 30px 15px;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            width: 350px;
+            height: 350px;
+            background: #c7d9ff;
+            border-radius: 50%;
+            top: -120px;
+            left: -120px;
+            opacity: 0.45;
+            z-index: -1;
+        }
+
+        body::after {
+            content: "";
+            position: fixed;
+            width: 300px;
+            height: 300px;
+            background: #dce8ff;
+            border-radius: 50%;
+            bottom: -100px;
+            right: -100px;
+            opacity: 0.5;
+            z-index: -1;
+        }
+
+        .main-container {
+            width: 100%;
+            max-width: 1050px;
+        }
+
+        /* ================= HEADER ================= */
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 22px;
+        }
+
+        .page-header h1 {
+            font-size: 30px;
+            font-weight: 800;
+            color: #172554;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .page-header p {
+            margin-top: 8px;
+            font-size: 15px;
+            color: #64748b;
+        }
+
+        /* ================= CARD ================= */
+
+        .login-card {
+            width: 100%;
+            background: white;
+            border-radius: 22px;
+            box-shadow: 0 15px 45px rgba(30, 64, 175, 0.15);
+            overflow: hidden;
+        }
+
+        .card-top {
+            background: linear-gradient(135deg, #1d4ed8, #2563eb);
+            color: white;
+            text-align: center;
+            padding: 28px 20px;
+        }
+
+        .degree-logo {
+            width: 75px;
+            height: 75px;
+            background: white;
+            color: #1d4ed8;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto 12px;
+            font-size: 36px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .card-top h2 {
+            font-size: 23px;
+            margin-bottom: 5px;
+        }
+
+        .card-top p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .card-body {
+            padding: 30px;
+        }
+
+        /* ================= ROLE ================= */
+
+        .role-picker {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        .role-tab {
+            border: 2px solid #dbe4f0;
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 14px 10px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 700;
+            color: #475569;
+            transition: 0.2s;
+        }
+
+        .role-tab:hover {
+            border-color: #2563eb;
+            color: #2563eb;
+        }
+
+        .role-tab.active {
+            background: #eff6ff;
+            border-color: #2563eb;
+            color: #1d4ed8;
+        }
+
+        /* ================= FORM ================= */
+
+        .form-section {
+            max-width: 650px;
+            margin: auto;
+        }
+
+        .form-section h3 {
+            text-align: center;
+            color: #172554;
+            font-size: 23px;
+            margin-bottom: 5px;
+        }
+
+        .selected-role {
+            text-align: center;
+            color: #64748b;
+            font-size: 14px;
+            margin-bottom: 25px;
+        }
+
+        .form-group {
+            margin-bottom: 17px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 7px;
+            color: #334155;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            padding: 12px 14px;
+            font-size: 15px;
+            outline: none;
+            background: white;
+            transition: 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        /* ================= BUTTON ================= */
+
+        .primary-button {
+            width: 100%;
+            border: none;
+            background: linear-gradient(135deg, #1d4ed8, #2563eb);
+            color: white;
+            padding: 14px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 8px;
+            transition: 0.2s;
+        }
+
+        .primary-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 18px rgba(37, 99, 235, 0.25);
+        }
+
+        .text-button {
+            border: none;
+            background: transparent;
+            color: #2563eb;
+            font-weight: 700;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        .text-button:hover {
+            text-decoration: underline;
+        }
+
+        /* ================= LOGIN ================= */
+
+        .login-links {
+            text-align: center;
+            margin-top: 22px;
+        }
+
+        .login-links a,
+        .switch-link {
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .login-links a:hover,
+        .switch-link:hover {
+            text-decoration: underline;
+        }
+
+        .or {
+            margin: 16px 0;
+            color: #94a3b8;
+            font-size: 14px;
+        }
+
+        .login-title {
+            text-align: center;
+            color: #172554;
+            font-size: 24px;
+            margin-bottom: 22px;
+        }
+
+        .password-box {
+            position: relative;
+        }
+
+        .password-box input {
+            padding-right: 50px;
+        }
+
+        #password-toggle {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-size: 18px;
+        }
+
+        .error-text {
+            color: #dc2626;
+            font-size: 13px;
+            margin-top: 5px;
+        }
+
+        /* ================= STATUS ================= */
+
+        .form-status {
+            padding: 10px 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .form-status:not(:empty) {
+            display: block;
+            background: #eff6ff;
+            color: #1e40af;
+        }
+
+        .form-status.success {
+            background: #ecfdf5;
+            color: #065f46;
+        }
+
+        .form-status.error {
+            background: #fef2f2;
+            color: #b91c1c;
+        }
+
+        /* ================= TPO ================= */
+
+        .tpo-box {
+            text-align: center;
+            background: #f8fafc;
+            border: 1px solid #dbe4f0;
+            border-radius: 15px;
+            padding: 35px 25px;
+        }
+
+        .tpo-icon {
+            font-size: 50px;
+            margin-bottom: 15px;
+        }
+
+        .tpo-box h3 {
+            color: #172554;
+            margin-bottom: 10px;
+        }
+
+        .tpo-box p {
+            color: #64748b;
+            line-height: 1.6;
+        }
+
+        /* ================= FOOTER ================= */
+
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        /* ================= HIDDEN ================= */
+
+        [hidden] {
+            display: none !important;
+        }
+
+        /* ================= MOBILE ================= */
+
+        @media (max-width: 700px) {
+
+            body {
+                padding: 15px;
+            }
+
+            .page-header h1 {
+                font-size: 22px;
+            }
+
+            .card-body {
+                padding: 20px;
+            }
+
+            .role-picker {
+                grid-template-columns: 1fr;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+                gap: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="main-container">
+
+    <!-- ================= PAGE HEADER ================= -->
+
+    <div class="page-header">
+        <h1>COLLEGE PLACEMENT MANAGEMENT SYSTEM</h1>
+        <p>Student • Company • Training & Placement Office</p>
+    </div>
+
+
+    <!-- ================= MAIN CARD ================= -->
+
+    <div class="login-card">
+
+        <!-- BLUE HEADER -->
+
+        <div class="card-top">
+
+            <div class="degree-logo">
+                🎓
+            </div>
+
+            <h2>College Placement Management</h2>
+
+            <p>Placement Portal</p>
+
+        </div>
+
+
+        <div class="card-body">
+
+            <!-- ================= ROLE SELECTION ================= -->
+
+            <div class="role-picker">
+
+                <button
+                    type="button"
+                    class="role-tab active"
+                    data-role="STUDENT">
+                    🎓 &nbsp; Student
+                </button>
+
+                <button
+                    type="button"
+                    class="role-tab"
+                    data-role="COMPANY">
+                    🏢 &nbsp; Company
+                </button>
+
+                <button
+                    type="button"
+                    class="role-tab"
+                    data-role="TPO">
+                    👥 &nbsp; TPO
+                </button>
+
+            </div>
+
+
+            <!-- ================================================= -->
+            <!-- ================= LOGIN SECTION ================== -->
+            <!-- ================================================= -->
+
+            <section id="login-panel">
+
+                <div class="form-section">
+
+                    <h2 class="login-title" id="login-heading">
+                        Sign In
+                    </h2>
+
+                    <p
+                        class="selected-role"
+                        id="selected-role-label">
+                        Sign in as Student
+                    </p>
+
+
+                    <form id="login-form">
+
+                        <!-- EMAIL / USERNAME -->
+
+                        <div class="form-group">
+
+                            <label for="identifier">
+                                Email / Username
+                            </label>
+
+                            <input
+                                type="text"
+                                id="identifier"
+                                name="identifier"
+                                placeholder="Enter your email or username"
+                                autocomplete="username"
+                                required>
+
+                            <div
+                                id="identifier-error"
+                                class="error-text">
+                            </div>
+
+                        </div>
+
+
+                        <!-- PASSWORD -->
+
+                        <div class="form-group">
+
+                            <label for="password">
+                                Password
+                            </label>
+
+                            <div class="password-box">
+
+                                <input
+                                    type="password"
+                                    id="password"
+                                    name="password"
+                                    placeholder="Enter your password"
+                                    autocomplete="current-password"
+                                    required>
+
+                                <button
+                                    type="button"
+                                    id="password-toggle">
+                                    👁️
+                                </button>
+
+                            </div>
+
+                            <div
+                                id="password-error"
+                                class="error-text">
+                            </div>
+
+                        </div>
+<!-- CAPTCHA -->
+<div class="form-group">
+
+    <label for="captchaInput">CAPTCHA</label>
+
+    <div id="captchaQuestion"
+         style="font-weight: bold; font-size: 18px; margin-bottom: 8px;">
+    </div>
+
+    <input
+        type="text"
+        id="captchaInput"
+        placeholder="Enter CAPTCHA answer"
+        autocomplete="off"
+        required>
+
+    <div id="captcha-error" class="error-text"></div>
+
+</div>
+
+                        <!-- STATUS -->
+
+                        <div
+                            id="form-status"
+                            class="form-status">
+                        </div>
+
+
+                        <!-- LOGIN BUTTON -->
+
+                        <button
+                            type="submit"
+                            id="login-button"
+                            class="primary-button">
+                            Sign In
+                        </button>
+
+                    </form>
+
+
+                    <!-- FORGOT PASSWORD -->
+
+                    <div class="login-links">
+
+                        <button
+                            type="button"
+                            id="forgot-password"
+                            class="text-button">
+                            Forgot Password?
+                        </button>
+
+                        <div class="or">
+                            OR
+                        </div>
+
+                        <a
+                            href="#"
+                            id="show-registration">
+                            Create New Account
+                        </a>
+
+                    </div>
+
+                </div>
+
+            </section>
+<!-- ================================================= -->
+<!-- ============== FORGOT PASSWORD ================== -->
+<!-- ================================================= -->
+
+<section id="forgot-password-panel" hidden>
+
+    <div class="form-section">
+
+        <h3>Forgot Password</h3>
+
+        <p class="selected-role">
+            Enter your registered email address
+        </p>
+
+        <form id="forgot-password-form">
+
+            <div class="form-group">
+
+                <label for="forgot-email">
+                    Email Address
+                </label>
+
+                <input
+                    type="email"
+                    id="forgot-email"
+                    name="email"
+                    placeholder="Enter your registered email"
+                    required>
+
+            </div>
+
+            <div
+                id="forgot-status"
+                class="form-status">
+            </div>
+
+            <button
+                type="submit"
+                class="primary-button">
+                Send Reset Link
+            </button>
+
+        </form>
+
+        <div class="login-links">
+
+            <a
+                href="#"
+                id="forgot-back-login">
+                Back to Sign In
+            </a>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+            <!-- ================================================= -->
+            <!-- ============ REGISTRATION SECTION =============== -->
+            <!-- ================================================= -->
+
+            <section
+                id="registration-panel"
+                hidden>
+
+                <div class="form-section">
+
+                    <!-- ================= STUDENT ================= -->
+
+                    <form
+                        id="registration-form"
+                        hidden>
+
+                        <h3>
+                            Student Registration
+                        </h3>
+
+                        <p class="selected-role">
+                            Create your student placement account
+                        </p>
+
+
+                        <!-- FIRST + LAST NAME -->
+
+                        <div class="form-row">
+
+                            <div class="form-group">
+
+                                <label for="registration-first-name">
+                                    First Name
+                                </label>
+
+                                <input
+                                    type="text"
+                                    id="registration-first-name"
+                                    name="first_name"
+                                    placeholder="Enter first name"
+                                    required>
+
+                            </div>
+
+
+                            <div class="form-group">
+
+                                <label for="registration-last-name">
+                                    Last Name
+                                </label>
+
+                                <input
+                                    type="text"
+                                    id="registration-last-name"
+                                    name="last_name"
+                                    placeholder="Enter last name"
+                                    required>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- EMAIL -->
+
+                        <div class="form-group">
+
+                            <label for="registration-email">
+                                Email
+                            </label>
+
+                            <input
+                                type="email"
+                                id="registration-email"
+                                name="email"
+                                placeholder="Enter your email"
+                                required>
+
+                        </div>
+
+                        <div class="form-group">
+                            <label for="registration-phone">Phone Number</label>
+                            <input type="tel" id="registration-phone" name="phone_number" autocomplete="tel" placeholder="Enter your phone number">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="registration-student-id">Student ID</label>
+                            <input type="text" id="registration-student-id" name="student_id" placeholder="Enter your register number" required>
+                        </div>
+
+
+                        <!-- PASSWORD -->
+
+                        <div class="form-row">
+
+                            <div class="form-group">
+
+                                <label for="registration-password">
+                                    Password
+                                </label>
+
+                                <input
+                                    type="password"
+                                    id="registration-password"
+                                    name="password"
+                                    placeholder="Create password"
+                                    required>
+
+                            </div>
+
+
+                            <div class="form-group">
+
+                                <label for="registration-password-confirm">
+                                    Confirm Password
+                                </label>
+
+                                <input
+                                    type="password"
+                                    id="registration-password-confirm"
+                                    name="password_confirm"
+                                    placeholder="Confirm password"
+                                    required>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- DEPARTMENT -->
+
+                        <div class="form-group">
+
+                            <label for="registration-department">
+                                Department
+                            </label>
+
+                            <input
+                                type="text"
+                                id="registration-department"
+                                name="department"
+                                placeholder="Example: Computer Science"
+                                required>
+
+                        </div>
+
+
+                        <!-- COURSE -->
+
+                        <div class="form-group">
+
+                            <label for="registration-course">
+                                Course
+                            </label>
+
+                            <input
+                                type="text"
+                                id="registration-course"
+                                name="course"
+                                placeholder="Example: B.Tech"
+                                required>
+
+                        </div>
+
+
+                        <!-- YEAR + CGPA -->
+
+                        <div class="form-row">
+
+                            <div class="form-group">
+
+                                <label for="registration-year">
+                                    Year
+                                </label>
+
+                                <select
+                                    id="registration-year"
+                                    name="year"
+                                    required>
+
+                                    <option value="">
+                                        Select Year
+                                    </option>
+
+                                    <option value="1">
+                                        1st Year
+                                    </option>
+
+                                    <option value="2">
+                                        2nd Year
+                                    </option>
+
+                                    <option value="3">
+                                        3rd Year
+                                    </option>
+
+                                    <option value="4">
+                                        4th Year
+                                    </option>
+
+                                </select>
+
+                            </div>
+
+
+                            <div class="form-group">
+
+                                <label for="registration-cgpa">
+                                    CGPA
+                                </label>
+
+                                <input
+                                    type="number"
+                                    id="registration-cgpa"
+                                    name="cgpa"
+                                    placeholder="Example: 8.5"
+                                    min="0"
+                                    max="10"
+                                    step="0.01"
+                                    required>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- SKILLS -->
+
+                        <div class="form-group">
+
+                            <label for="registration-skills">
+                                Skills
+                            </label>
+
+                            <textarea
+                                id="registration-skills"
+                                name="skills"
+                                placeholder="Example: Python, Java, HTML, CSS, SQL"
+                                required></textarea>
+
+                        </div>
+
+
+                        <!-- STATUS -->
+
+                        <div
+                            id="registration-status"
+                            class="form-status">
+                        </div>
+
+
+                        <!-- REGISTER -->
+
+                        <button
+                            type="submit"
+                            id="registration-button"
+                            class="primary-button">
+                            Create Student Account
+                        </button>
+
+
+                        <!-- BACK TO LOGIN -->
+
+                        <div class="login-links">
+
+                            <div class="or">
+                                Already have an account?
+                            </div>
+
+                            <a
+                                href="#"
+                                id="show-login">
+                                Sign In
+                            </a>
+
+                        </div>
+
+                    </form>
+
+
+
+                    <!-- ================================================= -->
+                    <!-- ================= COMPANY ======================= -->
+                    <!-- ================================================= -->
+
+                    <form
+                        id="company-registration-form"
+                        hidden>
+
+                        <h3>
+                            Company Registration
+                        </h3>
+
+                        <p class="selected-role">
+                            Create your company placement account
+                        </p>
+
+
+                        <!-- FIRST + LAST NAME -->
+
+                        <div class="form-row">
+
+                            <div class="form-group">
+
+                                <label for="company-registration-first-name">
+                                    First Name
+                                </label>
+
+                                <input
+                                    type="text"
+                                    id="company-registration-first-name"
+                                    name="first_name"
+                                    placeholder="Enter first name"
+                                    required>
+
+                            </div>
+
+
+                            <div class="form-group">
+
+                                <label for="company-registration-last-name">
+                                    Last Name
+                                </label>
+
+                                <input
+                                    type="text"
+                                    id="company-registration-last-name"
+                                    name="last_name"
+                                    placeholder="Enter last name"
+                                    required>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- EMAIL -->
+
+                        <div class="form-group">
+
+                            <label for="company-registration-email">
+                                Email
+                            </label>
+
+                            <input
+                                type="email"
+                                id="company-registration-email"
+                                name="email"
+                                placeholder="Enter your email"
+                                required>
+
+                        </div>
+
+
+                        <!-- PASSWORD -->
+
+                        <div class="form-row">
+
+                            <div class="form-group">
+
+                                <label for="company-registration-password">
+                                    Password
+                                </label>
+
+                                <input
+                                    type="password"
+                                    id="company-registration-password"
+                                    name="password"
+                                    placeholder="Create password"
+                                    required>
+
+                            </div>
+
+
+                            <div class="form-group">
+
+                                <label for="company-registration-password-confirm">
+                                    Confirm Password
+                                </label>
+
+                                <input
+                                    type="password"
+                                    id="company-registration-password-confirm"
+                                    name="password_confirm"
+                                    placeholder="Confirm password"
+                                    required>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- COMPANY NAME -->
+
+                        <div class="form-group">
+
+                            <label for="company-registration-name">
+                                Company Name
+                            </label>
+
+                            <input
+                                type="text"
+                                id="company-registration-name"
+                                name="company_name"
+                                placeholder="Enter company name"
+                                required>
+
+                        </div>
+
+
+                        <!-- COMPANY DESCRIPTION -->
+
+                        <div class="form-group">
+
+                            <label for="company-registration-description">
+                                Company Description
+                            </label>
+
+                            <textarea
+                                id="company-registration-description"
+                                name="company_description"
+                                placeholder="Describe your company"
+                                required></textarea>
+
+                        </div>
+
+
+                        <!-- INDUSTRY -->
+
+                        <div class="form-group">
+
+                            <label for="company-registration-industry">
+                                Industry
+                            </label>
+
+                            <input
+                                type="text"
+                                id="company-registration-industry"
+                                name="industry"
+                                placeholder="Example: Information Technology"
+                                required>
+
+                        </div>
+
+
+                        <!-- LOCATION -->
+
+                        <div class="form-group">
+
+                            <label for="company-registration-location">
+                                Location
+                            </label>
+
+                            <input
+                                type="text"
+                                id="company-registration-location"
+                                name="location"
+                                placeholder="Company location"
+                                required>
+
+                        </div>
+
+
+                        <!-- CONTACT EMAIL -->
+
+                        <div class="form-group">
+
+                            <label for="company-registration-contact-email">
+                                Contact Email
+                            </label>
+
+                            <input
+                                type="email"
+                                id="company-registration-contact-email"
+                                name="contact_email"
+                                placeholder="Company contact email"
+                                required>
+
+                        </div>
+
+
+                        <!-- CONTACT PHONE -->
+
+                        <div class="form-group">
+
+                            <label for="company-registration-contact-phone">
+                                Contact Phone
+                            </label>
+
+                            <input
+                                type="tel"
+                                id="company-registration-contact-phone"
+                                name="contact_phone"
+                                placeholder="Company contact phone"
+                                required>
+
+                        </div>
+
+
+                        <!-- COMPANY SIZE -->
+
+                        <div class="form-group">
+
+                            <label for="company-registration-size">
+                                Company Size
+                            </label>
+
+                            <select
+                                id="company-registration-size"
+                                name="company_size"
+                                required>
+
+                                <option value="">
+                                    Select Company Size
+                                </option>
+
+                                <option value="1-10">
+                                    1 - 10 Employees
+                                </option>
+
+                                <option value="11-50">
+                                    11 - 50 Employees
+                                </option>
+
+                                <option value="51-200">
+                                    51 - 200 Employees
+                                </option>
+
+                                <option value="201-500">
+                                    201 - 500 Employees
+                                </option>
+
+                                <option value="501-1000">
+                                    501 - 1000 Employees
+                                </option>
+
+                                <option value="1001+">
+                                    1001+ Employees
+                                </option>
+
+                            </select>
+
+                        </div>
+
+
+                        <!-- STATUS -->
+
+                        <div
+                            id="company-registration-status"
+                            class="form-status">
+                        </div>
+
+
+                        <!-- REGISTER -->
+
+                        <button
+                            type="submit"
+                            id="company-registration-button"
+                            class="primary-button">
+                            Create Company Account
+                        </button>
+
+
+                        <!-- BACK TO LOGIN -->
+
+                        <div class="login-links">
+
+                            <div class="or">
+                                Already have an account?
+                            </div>
+
+                            <a
+                                href="#"
+                                class="company-show-login">
+                                Sign In
+                            </a>
+
+                        </div>
+
+                    </form>
+
+
+
+                    <!-- ================================================= -->
+                    <!-- ==================== TPO ======================== -->
+                    <!-- ================================================= -->
+
+                    <form id="tpo-registration-form" hidden>
+                        <h3>TPO Registration</h3>
+                        <p class="selected-role">Create your Training &amp; Placement Office account</p>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="tpo-registration-first-name">First Name</label>
+                                <input type="text" id="tpo-registration-first-name" name="first_name" autocomplete="given-name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="tpo-registration-last-name">Last Name</label>
+                                <input type="text" id="tpo-registration-last-name" name="last_name" autocomplete="family-name" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="tpo-registration-email">Email</label>
+                            <input type="email" id="tpo-registration-email" name="email" autocomplete="email" required>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="tpo-registration-password">Password</label>
+                                <input type="password" id="tpo-registration-password" name="password" autocomplete="new-password" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="tpo-registration-password-confirm">Confirm Password</label>
+                                <input type="password" id="tpo-registration-password-confirm" name="password_confirm" autocomplete="new-password" required>
+                            </div>
+                        </div>
+
+                        <div id="tpo-registration-status" class="form-status" role="status" aria-live="polite"></div>
+
+                        <button type="submit" class="primary-button">Create TPO Account</button>
+
+                        <div class="login-links">
+                            <a href="#" class="tpo-show-login">Back to Sign In</a>
+                        </div>
+                    </form>
+
+                </div>
+
+            </section>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================= FOOTER ================= -->
+
+    <div class="footer">
+        © 2026 College Placement Management System
+    </div>
+
+</div>
+
+
+<!-- IMPORTANT:
+     Keep your existing JavaScript file.
+     Do NOT delete js/script.js.
+-->
+
+<script src="js/script.js"></script>
+
+<script>
+let captchaCode = "";
+
+function generateCaptcha() {
+
+    const characters =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+    captchaCode = "";
+
+    for (let i = 0; i < 6; i++) {
+        captchaCode += characters.charAt(
+            Math.floor(Math.random() * characters.length)
+        );
+    }
+
+    document.getElementById("captchaQuestion").textContent =
+        captchaCode;
+
+    document.getElementById("captchaInput").value = "";
+}
+
+generateCaptcha();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,286 @@
+/* =========================
+   GENERAL
+========================= */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    min-height: 100vh;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    background: linear-gradient(135deg, #667eea, #764ba2);
+}
+
+
+/* =========================
+   LOGIN CONTAINER
+========================= */
+
+.login-container {
+    width: 100%;
+    padding: 20px;
+}
+
+
+/* =========================
+   LOGIN BOX
+========================= */
+
+.login-box {
+    width: 100%;
+    max-width: 450px;
+
+    margin: auto;
+    padding: 35px;
+
+    background: white;
+
+    border-radius: 15px;
+
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+
+/* =========================
+   HEADING
+========================= */
+
+.login-box h1 {
+    text-align: center;
+    margin-bottom: 8px;
+
+    color: #222;
+}
+
+.subtitle {
+    text-align: center;
+    color: #777;
+
+    margin-bottom: 30px;
+}
+
+
+/* =========================
+   ROLE SECTION
+========================= */
+
+.role-section {
+    margin-bottom: 25px;
+}
+
+.role-section > label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.roles {
+    display: flex;
+    gap: 10px;
+}
+
+.role-option {
+    flex: 1;
+}
+
+.role-option input {
+    display: none;
+}
+
+.role-option span {
+    display: block;
+
+    padding: 12px 8px;
+
+    text-align: center;
+
+    border: 2px solid #ddd;
+    border-radius: 8px;
+
+    cursor: pointer;
+
+    transition: 0.3s;
+}
+
+.role-option input:checked + span {
+    background: #667eea;
+    color: white;
+
+    border-color: #667eea;
+}
+
+
+/* =========================
+   INPUT GROUP
+========================= */
+
+.input-group {
+    margin-bottom: 20px;
+}
+
+.input-group label {
+    display: block;
+
+    font-weight: bold;
+
+    margin-bottom: 7px;
+
+    color: #333;
+}
+
+.input-group input {
+    width: 100%;
+
+    padding: 13px;
+
+    border: 1px solid #ccc;
+    border-radius: 8px;
+
+    font-size: 15px;
+
+    outline: none;
+
+    transition: 0.3s;
+}
+
+.input-group input:focus {
+    border-color: #667eea;
+
+    box-shadow: 0 0 5px rgba(102, 126, 234, 0.3);
+}
+
+
+/* =========================
+   PASSWORD
+========================= */
+
+.password-container {
+    position: relative;
+}
+
+.password-container input {
+    padding-right: 45px;
+}
+
+.eye-button {
+    position: absolute;
+
+    right: 8px;
+    top: 50%;
+
+    transform: translateY(-50%);
+
+    border: none;
+    background: transparent;
+
+    cursor: pointer;
+
+    font-size: 18px;
+}
+
+
+/* =========================
+   ERROR
+========================= */
+
+.error {
+    display: block;
+
+    margin-top: 5px;
+
+    color: #e53935;
+
+    font-size: 13px;
+}
+
+
+/* =========================
+   FORGOT PASSWORD
+========================= */
+
+.forgot-container {
+    text-align: right;
+
+    margin-bottom: 20px;
+}
+
+.forgot-container a {
+    color: #667eea;
+
+    text-decoration: none;
+
+    font-size: 14px;
+}
+
+.forgot-container a:hover {
+    text-decoration: underline;
+}
+
+
+/* =========================
+   LOGIN BUTTON
+========================= */
+
+.login-button {
+    width: 100%;
+
+    padding: 14px;
+
+    border: none;
+
+    border-radius: 8px;
+
+    background: #667eea;
+
+    color: white;
+
+    font-size: 16px;
+
+    font-weight: bold;
+
+    cursor: pointer;
+
+    transition: 0.3s;
+}
+
+.login-button:hover {
+    background: #5568d9;
+}
+
+
+/* =========================
+   LOGIN MESSAGE
+========================= */
+
+.login-message {
+    text-align: center;
+
+    margin-top: 15px;
+
+    font-weight: bold;
+}
+
+
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 500px) {
+
+    .login-box {
+        padding: 25px;
+    }
+
+    .roles {
+        flex-direction: column;
+    }
+
+}

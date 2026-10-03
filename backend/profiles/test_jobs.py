@@ -8,7 +8,7 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from profiles.models import CompanyProfile, JobApplication, JobListing, StudentProfile
+from profiles.models import CompanyProfile, JobApplication, JobListing, Notification, PlacementDrive, StudentProfile
 
 User = get_user_model()
 
@@ -128,6 +128,7 @@ class Stage5JobAndApplicationAPITests(TestCase):
         self.company_jobs_url = reverse("company-job-list")
         self.tpo_jobs_url = reverse("tpo-job-list")
         self.student_jobs_url = reverse("student-job-list")
+        self.student_companies_url = reverse("student-company-list")
         self.student_apps_url = reverse("student-application-list")
 
     # =========================================================================
@@ -152,6 +153,45 @@ class Stage5JobAndApplicationAPITests(TestCase):
         self.assertEqual(response.data["job"]["company_name"], "TechCorp Inc.")
         # Status defaults to PENDING_TPO_APPROVAL
         self.assertEqual(response.data["job"]["status"], "PENDING_TPO_APPROVAL")
+        self.assertTrue(
+            Notification.objects.filter(
+                recipient=self.tpo_user,
+                notification_type=Notification.NotificationType.JOB_REVIEW_REQUIRED,
+            ).exists()
+        )
+
+    def test_tpo_can_create_and_list_persisted_placement_drive(self):
+        job = JobListing.objects.create(
+            company=self.company_profile_a,
+            job_title="Placement Drive Role",
+            description="Drive-backed approved role",
+            job_location="Bengaluru",
+            application_deadline=self.future_deadline,
+            status=JobListing.JobStatus.APPROVED,
+        )
+        payload = {
+            "company": self.company_profile_a.id,
+            "job": job.id,
+            "drive_date": (timezone.now() + timedelta(days=5)).date().isoformat(),
+            "eligible_departments": ["Computer Science"],
+            "eligible_courses": ["B.Tech"],
+            "minimum_cgpa": "7.50",
+            "application_deadline": self.future_deadline.isoformat(),
+            "status": "PUBLISHED",
+        }
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.tpo_token}")
+        create_response = self.client.post(reverse("tpo-placement-drive-list"), payload, format="json")
+        self.assertEqual(create_response.status_code, status.HTTP_201_CREATED)
+        drive_id = create_response.data["drive"]["id"]
+        self.assertTrue(PlacementDrive.objects.filter(pk=drive_id, job=job, company=self.company_profile_a).exists())
+
+        list_response = self.client.get(reverse("tpo-placement-drive-list"))
+        self.assertEqual(list_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(list_response.data), 1)
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.student_token_1}")
+        denied_response = self.client.get(reverse("tpo-placement-drive-list"))
+        self.assertEqual(denied_response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_student_cannot_create_job(self):
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.student_token_1}")
@@ -265,6 +305,45 @@ class Stage5JobAndApplicationAPITests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["job"]["job_title"], "Lead QA Engineer")
 
+    def test_company_edits_to_approved_job_return_it_for_tpo_review(self):
+        job = JobListing.objects.create(
+            company=self.company_profile_a,
+            job_title="Approved Role",
+            description="Current details",
+            job_location="Bengaluru",
+            application_deadline=self.future_deadline,
+            status=JobListing.JobStatus.APPROVED,
+        )
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.company_token_a}")
+
+        response = self.client.patch(
+            reverse("company-job-detail", kwargs={"pk": job.id}),
+            {"job_title": "Updated Role"},
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["job"]["status"], JobListing.JobStatus.PENDING_TPO_APPROVAL)
+
+    def test_company_can_close_approved_job_without_deleting_it(self):
+        job = JobListing.objects.create(
+            company=self.company_profile_a,
+            job_title="Approved Role",
+            description="Current details",
+            job_location="Bengaluru",
+            application_deadline=self.future_deadline,
+            status=JobListing.JobStatus.APPROVED,
+        )
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.company_token_a}")
+
+        response = self.client.patch(
+            reverse("company-job-detail", kwargs={"pk": job.id}),
+            {"status": JobListing.JobStatus.CLOSED},
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        job.refresh_from_db()
+        self.assertEqual(job.status, JobListing.JobStatus.CLOSED)
+
     def test_company_cannot_approve_its_own_job_on_update(self):
         job_a = JobListing.objects.create(
             company=self.company_profile_a,
@@ -336,6 +415,23 @@ class Stage5JobAndApplicationAPITests(TestCase):
 
         job.refresh_from_db()
         self.assertEqual(job.status, JobListing.JobStatus.APPROVED)
+        self.assertTrue(
+            Notification.objects.filter(
+                recipient=self.student_user_1,
+                notification_type=Notification.NotificationType.NEW_JOB,
+                job=job,
+            ).exists()
+        )
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.company_token_a}")
+        company_jobs = self.client.get(self.company_jobs_url)
+        self.assertEqual(company_jobs.status_code, status.HTTP_200_OK)
+        self.assertEqual(company_jobs.data[0]["status"], "APPROVED")
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.student_token_1}")
+        student_jobs = self.client.get(self.student_jobs_url)
+        self.assertEqual(student_jobs.status_code, status.HTTP_200_OK)
+        self.assertIn(job.id, [item["id"] for item in student_jobs.data])
 
     def test_tpo_can_reject_job(self):
         job = JobListing.objects.create(
@@ -405,12 +501,44 @@ class Stage5JobAndApplicationAPITests(TestCase):
             application_deadline=self.future_deadline,
             status=JobListing.JobStatus.REJECTED,
         )
+        JobListing.objects.create(
+            company=self.company_profile_a,
+            job_title="Expired Approved Role",
+            description="Deadline has passed",
+            job_location="Bengaluru",
+            application_deadline=self.past_deadline,
+            status=JobListing.JobStatus.APPROVED,
+        )
 
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.student_token_1}")
         response = self.client.get(self.student_jobs_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]["job_title"], "Approved Cloud Role")
+
+    def test_student_company_directory_shows_approved_companies_and_open_job_counts(self):
+        JobListing.objects.create(
+            company=self.company_profile_a,
+            job_title="Approved Cloud Role",
+            description="Good job",
+            job_location="Bengaluru",
+            application_deadline=self.future_deadline,
+            status=JobListing.JobStatus.APPROVED,
+        )
+        self.company_profile_b.verification_status = CompanyProfile.VerificationStatus.PENDING
+        self.company_profile_b.save(update_fields=["verification_status"])
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.student_token_1}")
+        response = self.client.get(self.student_companies_url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["company_name"], "TechCorp Inc.")
+        self.assertEqual(response.data[0]["available_jobs"], 1)
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.company_token_a}")
+        denied_response = self.client.get(self.student_companies_url)
+        self.assertEqual(denied_response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_eligibility_computation_in_student_job_listing(self):
         # Job requires 8.0 CGPA and CSE department
@@ -460,6 +588,170 @@ class Stage5JobAndApplicationAPITests(TestCase):
         self.assertEqual(response.data["application"]["job_title"], "Software Developer")
         self.assertEqual(response.data["application"]["company_name"], "TechCorp Inc.")
         self.assertEqual(response.data["application"]["status"], "APPLIED")
+
+    def test_student_application_is_saved_and_visible_to_job_owner(self):
+        job = JobListing.objects.create(
+            company=self.company_profile_a,
+            job_title="Integration Test Engineer",
+            description="Cross-role data flow",
+            job_location="Bengaluru",
+            minimum_cgpa=Decimal("7.00"),
+            eligible_departments=["Computer Science"],
+            application_deadline=self.future_deadline,
+            status=JobListing.JobStatus.APPROVED,
+        )
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.student_token_1}")
+        apply_response = self.client.post(reverse("student-job-apply", kwargs={"pk": job.id}))
+        self.assertEqual(apply_response.status_code, status.HTTP_201_CREATED)
+        application_id = apply_response.data["application"]["id"]
+        application = JobApplication.objects.get(pk=application_id)
+        self.assertEqual(application.student, self.student_profile_1)
+        self.assertEqual(application.job, job)
+        self.assertTrue(
+            Notification.objects.filter(
+                recipient=self.student_user_1,
+                notification_type=Notification.NotificationType.APPLICATION_SUBMITTED,
+                application=application,
+            ).exists()
+        )
+        self.assertTrue(
+            Notification.objects.filter(
+                recipient=self.company_user_a,
+                notification_type=Notification.NotificationType.APPLICATION_SUBMITTED,
+                application=application,
+            ).exists()
+        )
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.company_token_a}")
+        applicants_response = self.client.get(reverse("company-job-applications", kwargs={"pk": job.id}))
+        self.assertEqual(applicants_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(applicants_response.data), 1)
+        applicant = applicants_response.data[0]
+        self.assertEqual(applicant["student_id"], "23CS001")
+        self.assertEqual(applicant["email"], "student1@college.edu")
+        self.assertEqual(applicant["department"], "Computer Science")
+        self.assertEqual(applicant["course"], "B.Tech")
+        self.assertEqual(applicant["year"], 4)
+        self.assertEqual(str(applicant["cgpa"]), "8.50")
+        self.assertEqual(applicant["status"], "APPLIED")
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.company_token_b}")
+        other_company_response = self.client.get(reverse("company-job-applications", kwargs={"pk": job.id}))
+        self.assertEqual(other_company_response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_two_students_complete_company_application_interview_and_offer_flow(self):
+        self.company_profile_a.company_name = "COMP001"
+        self.company_profile_a.save(update_fields=["company_name"])
+        self.student_user_1.student_id = "STU001"
+        self.student_user_1.save(update_fields=["student_id"])
+        self.student_user_2.student_id = "STU002"
+        self.student_user_2.save(update_fields=["student_id"])
+
+        student_tokens = [
+            _get_token(self.client, "STU001", "StudentPass123!"),
+            _get_token(self.client, "STU002", "StudentPass123!"),
+        ]
+        company_token = _get_token(self.client, "hr@techcorp.com", "CompanyPass123!")
+        job = JobListing.objects.create(
+            company=self.company_profile_a,
+            job_title="Software Developer",
+            description="Application workflow test job",
+            job_location="Bengaluru",
+            application_deadline=self.future_deadline,
+            status=JobListing.JobStatus.APPROVED,
+        )
+
+        for token, expected_student_id in zip(student_tokens, ["STU001", "STU002"]):
+            self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+            jobs_response = self.client.get(self.student_jobs_url)
+            self.assertEqual(jobs_response.status_code, status.HTTP_200_OK)
+            self.assertIn(job.id, [item["id"] for item in jobs_response.data])
+
+            apply_response = self.client.post(reverse("student-job-apply", kwargs={"pk": job.id}))
+            self.assertEqual(apply_response.status_code, status.HTTP_201_CREATED)
+            self.assertEqual(apply_response.data["application"]["student_id"], expected_student_id)
+
+        self.assertEqual(JobApplication.objects.filter(job=job).count(), 2)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {company_token}")
+        company_jobs = self.client.get(self.company_jobs_url)
+        self.assertEqual(company_jobs.status_code, status.HTTP_200_OK)
+        self.assertIn(job.id, [item["id"] for item in company_jobs.data])
+
+        applicants_url = reverse("company-job-applications", kwargs={"pk": job.id})
+        applicants_response = self.client.get(applicants_url)
+        self.assertEqual(applicants_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            {applicant["student_id"] for applicant in applicants_response.data},
+            {"STU001", "STU002"},
+        )
+        for applicant in applicants_response.data:
+            self.assertEqual(applicant["email"], applicant["email"].lower())
+            self.assertEqual(applicant["department"], "Computer Science" if applicant["student_id"] == "STU001" else "Mechanical Engineering")
+            self.assertEqual(applicant["course"], "B.Tech")
+            self.assertTrue(applicant["applied_at"])
+            self.assertEqual(applicant["status"], "APPLIED")
+            self.assertIn("skills", applicant)
+            self.assertIn("resume", applicant)
+
+        applications_by_student = {
+            application.student.user.student_id: application
+            for application in JobApplication.objects.filter(job=job).select_related("student__user")
+        }
+        shortlisted_application = applications_by_student["STU001"]
+        status_url = reverse("company-application-status", kwargs={"pk": shortlisted_application.id})
+        shortlist_response = self.client.patch(status_url, {"status": "SHORTLISTED"})
+        self.assertEqual(shortlist_response.status_code, status.HTTP_200_OK)
+        applicants_after_shortlist = self.client.get(applicants_url)
+        self.assertEqual(applicants_after_shortlist.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            {applicant["student_id"]: applicant["status"] for applicant in applicants_after_shortlist.data},
+            {"STU001": "SHORTLISTED", "STU002": "APPLIED"},
+        )
+
+        interview_url = reverse("company-application-interviews", kwargs={"pk": shortlisted_application.id})
+        interview_response = self.client.post(
+            interview_url,
+            {
+                "round": 1,
+                "interview_type": "ONLINE",
+                "scheduled_at": (timezone.now() + timedelta(days=5)).isoformat(),
+                "meeting_link": "https://meet.google.com/test-company-flow",
+                "interviewer": "Engineering Panel",
+            },
+            format="json",
+        )
+        self.assertEqual(interview_response.status_code, status.HTTP_201_CREATED)
+        interview_list = self.client.get(interview_url)
+        self.assertEqual(interview_list.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(interview_list.data), 1)
+
+        select_response = self.client.patch(status_url, {"status": "SELECTED"})
+        self.assertEqual(select_response.status_code, status.HTTP_200_OK)
+        offer_url = reverse("company-application-offer", kwargs={"pk": shortlisted_application.id})
+        offer_response = self.client.post(
+            offer_url,
+            {
+                "offer_letter_number": "COMP001-STU001-TEST",
+                "ctc": "1500000.00",
+                "joining_date": (timezone.now() + timedelta(days=60)).date().isoformat(),
+                "offer_details": "Isolated application-flow test offer",
+            },
+            format="json",
+        )
+        self.assertEqual(offer_response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(self.client.get(offer_url).status_code, status.HTTP_200_OK)
+        applicants_after_offer = self.client.get(applicants_url)
+        self.assertEqual(applicants_after_offer.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(applicants_after_offer.data), 2)
+        self.assertEqual(
+            {applicant["student_id"]: applicant["status"] for applicant in applicants_after_offer.data},
+            {"STU001": "SELECTED", "STU002": "APPLIED"},
+        )
+        self.assertEqual(
+            JobApplication.objects.filter(job=job).values_list("status", flat=True).count(),
+            2,
+        )
 
     def test_student_cannot_apply_with_insufficient_cgpa(self):
         job = JobListing.objects.create(

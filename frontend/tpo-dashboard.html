@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="description" content="TPO administration dashboard for the College Placement Management System">
+	<title>TPO Dashboard | College Placement Management System</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
+	<link rel="stylesheet" href="css/style.css">
+</head>
+<body class="tpo-dashboard-body">
+	<div class="app-shell">
+		<aside class="sidebar tpo-sidebar">
+			<div class="brand-box">
+				<div class="brand-mark tpo-brand-mark">CP</div>
+				<div class="brand-copy"><span>College Placement</span><small>Management</small></div>
+			</div>
+			<nav class="side-nav" aria-label="TPO navigation">
+				<button class="nav-item is-active" type="button" data-tpo-section="tpo-overview"><span class="nav-icon">▣</span><span>Dashboard</span></button>
+				<button class="nav-item" type="button" data-tpo-section="tpo-students"><span class="nav-icon">◉</span><span>Students</span></button>
+				<button class="nav-item" type="button" data-tpo-section="tpo-companies"><span class="nav-icon">◈</span><span>Companies</span></button>
+				<button class="nav-item" type="button" data-tpo-section="tpo-jobs"><span class="nav-icon">▤</span><span>Jobs</span></button>
+				<button class="nav-item" type="button" data-tpo-section="tpo-applications"><span class="nav-icon">⌁</span><span>Applications</span></button>
+				<button class="nav-item" type="button" data-tpo-section="tpo-drives"><span class="nav-icon">◆</span><span>Placement Drives</span></button>
+				<button class="nav-item" type="button" data-tpo-section="tpo-interviews"><span class="nav-icon">◌</span><span>Interviews</span></button>
+				<button class="nav-item" type="button" data-tpo-section="tpo-offers"><span class="nav-icon">✓</span><span>Offers</span></button>
+				<button class="nav-item" type="button" data-tpo-section="tpo-records"><span class="nav-icon">▥</span><span>Placement Records</span></button>
+				<button class="nav-item" type="button" data-tpo-section="tpo-reports"><span class="nav-icon">◫</span><span>Reports</span></button>
+				<button class="nav-item" type="button" data-tpo-section="tpo-notifications"><span class="nav-icon">!</span><span>Notifications</span></button>
+				<button class="nav-item" type="button" data-tpo-section="tpo-settings"><span class="nav-icon">⚙</span><span>Settings</span></button>
+			</nav>
+			<button class="sidebar-logout" type="button" data-action="logout">Logout</button>
+		</aside>
+
+		<div class="content-area">
+			<header class="topbar tpo-topbar">
+				<button class="mobile-menu-toggle" type="button" aria-label="Open menu" aria-expanded="false"><span></span><span></span><span></span></button>
+				<div><p class="topbar-label">Administration portal</p><h1>TPO Dashboard</h1></div>
+				<div class="topbar-actions">
+					<div class="tpo-search"><label for="tpo-global-search">Search dashboard</label><input id="tpo-global-search" type="search" placeholder="Search records..."></div>
+					<button class="notification-button" type="button" data-tpo-section="tpo-notifications" aria-label="Notifications">🔔<span class="notification-badge" id="tpo-notification-badge" hidden></span></button>
+					<button class="user-pill tpo-profile-menu" type="button" aria-label="Open profile menu"><div class="user-avatar tpo-avatar" id="tpo-avatar">--</div><div class="user-meta"><strong id="tpo-name-display">Loading TPO profile...</strong><span>Training & Placement Officer</span></div><span class="profile-chevron">⌄</span></button>
+				</div>
+			</header>
+
+			<main class="dashboard-main tpo-dashboard-main">
+				<section class="stats-grid tpo-stats-grid" id="tpo-overview">
+					<article class="stat-card"><div class="stat-card-header"><span class="stat-label">Total Students</span><span class="stat-icon blue">👥</span></div><strong class="stat-value" id="tpo-stat-students">Loading...</strong><small class="stat-meta">Registered candidates</small></article>
+					<article class="stat-card"><div class="stat-card-header"><span class="stat-label">Registered Companies</span><span class="stat-icon green">◈</span></div><strong class="stat-value" id="tpo-stat-companies">Loading...</strong><small class="stat-meta">Partner organizations</small></article>
+					<article class="stat-card"><div class="stat-card-header"><span class="stat-label">Active Jobs</span><span class="stat-icon orange">▤</span></div><strong class="stat-value" id="tpo-stat-jobs">Loading...</strong><small class="stat-meta">Open opportunities</small></article>
+					<article class="stat-card"><div class="stat-card-header"><span class="stat-label">Total Applications</span><span class="stat-icon purple">⌁</span></div><strong class="stat-value" id="tpo-stat-applications">Loading...</strong><small class="stat-meta">Across all jobs</small></article>
+					<article class="stat-card"><div class="stat-card-header"><span class="stat-label">Shortlisted Students</span><span class="stat-icon coral">★</span></div><strong class="stat-value" id="tpo-stat-shortlisted">Loading...</strong><small class="stat-meta">Moving to next round</small></article>
+					<article class="stat-card"><div class="stat-card-header"><span class="stat-label">Students Placed</span><span class="stat-icon green">✓</span></div><strong class="stat-value" id="tpo-stat-placed">Loading...</strong><small class="stat-meta">Confirmed placements</small></article>
+					<article class="stat-card placement-card"><div class="stat-card-header"><span class="stat-label">Placement Percentage</span><span class="stat-icon teal">%</span></div><strong class="stat-value" id="tpo-stat-percentage">Loading...</strong><small class="stat-meta">Of registered students</small></article>
+					<article class="stat-card"><div class="stat-card-header"><span class="stat-label">Upcoming Interviews</span><span class="stat-icon purple">📅</span></div><strong class="stat-value" id="tpo-stat-interviews">Loading...</strong><small class="stat-meta">Scheduled this week</small></article>
+				</section>
+
+				<section class="tpo-overview-grid">
+					<article class="panel placement-overview-panel">
+						<div class="panel-header"><div><p class="section-kicker">Placement cycle</p><h2>Placement Overview</h2></div><span class="year-pill">Not configured</span></div>
+						<div class="placement-bars" id="placement-bars"></div>
+					</article>
+					<article class="panel tpo-quick-panel"><div class="panel-header"><div><p class="section-kicker">Attention needed</p><h2>Quick Actions</h2></div></div><div class="quick-actions"><button class="quick-action" type="button" data-tpo-section="tpo-companies"><strong>Review companies</strong><span>Pending approvals</span></button><button class="quick-action" type="button" data-tpo-section="tpo-jobs"><strong>Approve job posts</strong><span>Awaiting moderation</span></button><button class="quick-action" type="button" data-tpo-section="tpo-drives"><strong>Create placement drive</strong><span>Open a new opportunity</span></button></div></article>
+				</section>
+
+				<section class="panel tpo-data-panel" id="tpo-students"><div class="panel-header"><div><p class="section-kicker">Directory</p><h2>Student Management</h2></div><div class="table-toolbar"><input id="student-search" type="search" placeholder="Search students..."><select id="student-department-filter"><option value="">All departments</option><option value="Computer Science">Computer Science</option><option value="Information Technology">Information Technology</option><option value="Electronics">Electronics</option></select><select id="student-status-filter"><option value="">All placement statuses</option><option value="Placed">Placed</option><option value="Withdrawn">Withdrawn</option><option value="Shortlisted">Shortlisted</option><option value="Seeking">Seeking</option></select></div></div><div class="table-wrap"><table class="tpo-table"><thead><tr><th>Student ID</th><th>Name</th><th>Department</th><th>Course</th><th>CGPA</th><th>Year</th><th>Placement</th><th>Account</th><th>Actions</th></tr></thead><tbody id="students-table-body"></tbody></table></div><div class="pagination" id="students-pagination"></div></section>
+
+				<section class="panel tpo-data-panel" id="tpo-companies"><div class="panel-header"><div><p class="section-kicker">Partners</p><h2>Company Management</h2></div><div class="filter-tabs" id="company-filters"><button class="filter-tab is-active" type="button" data-filter="">All</button><button class="filter-tab" type="button" data-filter="Approved">Approved</button><button class="filter-tab" type="button" data-filter="Pending">Pending</button><button class="filter-tab" type="button" data-filter="Rejected">Rejected</button></div></div><div class="table-wrap"><table class="tpo-table"><thead><tr><th>Company</th><th>Industry</th><th>Email</th><th>Location</th><th>Jobs</th><th>Applicants</th><th>Company status</th><th>Approval</th><th>Actions</th></tr></thead><tbody id="companies-table-body"></tbody></table></div></section>
+
+				<section class="panel tpo-data-panel" id="tpo-jobs"><div class="panel-header"><div><p class="section-kicker">Moderation</p><h2>Job Management</h2></div></div><div class="table-wrap"><table class="tpo-table"><thead><tr><th>Job title</th><th>Company</th><th>Location</th><th>Package</th><th>Eligibility</th><th>Posted</th><th>Deadline</th><th>Applicants</th><th>Status</th><th>Actions</th></tr></thead><tbody id="jobs-table-body"></tbody></table></div></section>
+
+				<section class="panel tpo-data-panel" id="tpo-applications"><div class="panel-header"><div><p class="section-kicker">Candidate flow</p><h2>Application Management</h2></div></div><div class="table-wrap"><table class="tpo-table"><thead><tr><th>Student</th><th>Company</th><th>Job</th><th>Applied</th><th>CGPA</th><th>Application</th><th>Shortlist</th><th>Interview</th><th>Actions</th></tr></thead><tbody id="applications-admin-body"></tbody></table></div></section>
+
+				<section class="panel tpo-data-panel" id="tpo-drives"><div class="panel-header"><div><p class="section-kicker">Campus events</p><h2>Placement Drives</h2></div><button class="primary-button compact-button" type="button" data-action="create-drive">+ New Drive</button></div><div class="drive-grid" id="drives-list"><p class="loading-state">Loading placement drives...</p></div></section>
+
+				<section class="panel tpo-data-panel" id="tpo-interviews"><div class="panel-header"><div><p class="section-kicker">Schedule</p><h2>Interview Management</h2></div></div><div class="table-wrap"><table class="tpo-table"><thead><tr><th>Student</th><th>Company</th><th>Job</th><th>Round</th><th>Date</th><th>Time</th><th>Mode</th><th>Interviewer</th><th>Status</th><th>Actions</th></tr></thead><tbody id="interviews-admin-body"></tbody></table></div></section>
+
+				<section class="panel tpo-data-panel" id="tpo-offers"><div class="panel-header"><div><p class="section-kicker">Outcomes</p><h2>Offers</h2></div></div><div class="table-wrap"><table class="tpo-table"><thead><tr><th>Student</th><th>Company</th><th>Job</th><th>Package</th><th>Offer date</th><th>Joining date</th><th>Status</th></tr></thead><tbody id="offers-table-body"></tbody></table></div></section>
+
+				<section class="panel tpo-data-panel" id="tpo-records"><div class="panel-header"><div><p class="section-kicker">Archive</p><h2>Placement Records</h2></div></div><div class="table-wrap"><table class="tpo-table"><thead><tr><th>Student</th><th>Company</th><th>Job</th><th>Package</th><th>Placement date</th><th>Academic year</th><th>Status</th><th>Action</th></tr></thead><tbody id="records-table-body"></tbody></table></div></section>
+
+				<section class="panel tpo-data-panel" id="tpo-reports"><div class="panel-header"><div><p class="section-kicker">Insights</p><h2>Reports</h2></div></div><div class="report-grid" id="reports-grid"></div></section>
+
+				<section class="panel tpo-data-panel" id="tpo-notifications"><div class="panel-header"><div><p class="section-kicker">Updates</p><h2>Notifications</h2></div><button class="secondary-button" type="button" data-action="mark-notifications-read">Mark all read</button></div><div class="notification-list" id="notifications-list"><p class="loading-state">Loading notifications...</p></div></section>
+
+				<section class="panel tpo-data-panel" id="tpo-settings"><div class="panel-header"><div><p class="section-kicker">Workspace</p><h2>Settings</h2></div></div><div class="settings-grid"><div><strong>Placement cycle</strong><span>Not configured</span></div><div><strong>Institution</strong><span>Not configured</span></div><div><strong>Notification digest</strong><span>Not supported by the current API</span></div></div></section>
+			</main>
+		</div>
+	</div>
+
+	<div class="modal-backdrop" id="tpo-modal" aria-hidden="true"><div class="job-modal tpo-modal" role="dialog" aria-modal="true" aria-labelledby="tpo-modal-title"><button class="modal-close" type="button" id="tpo-modal-close" aria-label="Close dialog">×</button><div class="modal-body"><p class="section-kicker" id="tpo-modal-kicker">Record details</p><h3 id="tpo-modal-title">Details</h3><div class="tpo-modal-content" id="tpo-modal-content"></div></div><div class="modal-actions" id="tpo-modal-actions"></div></div></div>
+	<div class="toast" id="toast" role="status" aria-live="polite"></div>
+	<script src="js/script.js"></script>
+</body>
+</html>

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Student Management System - Login</title>
+
+    <link rel="stylesheet" href="frontend.css">
+
+    <!-- Font Awesome for Eye Icon -->
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+
+<body>
+
+    <div class="login-container">
+
+        <div class="login-box">
+
+            <h1>Login</h1>
+
+            <p class="subtitle">
+                Student Management System
+            </p>
+
+            <!-- Role Selection -->
+            <div class="form-group">
+
+                <label for="role">
+                    Login As
+                </label>
+
+                <select id="role">
+
+                    <option value="">
+                        Select Role
+                    </option>
+
+                    <option value="admin">
+                        Admin
+                    </option>
+
+                    <option value="company">
+                        Company
+                    </option>
+
+                    <option value="student">
+                        Student
+                    </option>
+
+                </select>
+
+                <small id="roleError"></small>
+
+            </div>
+
+
+            <!-- Username -->
+            <div class="form-group">
+
+                <label for="username">
+                    Username
+                </label>
+
+                <input
+                    type="text"
+                    id="username"
+                    placeholder="Enter username"
+                    autocomplete="username"
+                >
+
+                <small id="usernameError"></small>
+
+            </div>
+
+
+            <!-- Email -->
+            <div class="form-group">
+
+                <label for="email">
+                    Email
+                </label>
+
+                <input
+                    type="text"
+                    id="email"
+                    placeholder="example@gmail.com"
+                    autocomplete="email"
+                >
+
+                <small id="emailError"></small>
+
+            </div>
+
+
+            <!-- Password -->
+            <div class="form-group">
+
+                <label for="password">
+                    Password
+                </label>
+
+                <div class="password-box">
+
+                    <input
+                        type="password"
+                        id="password"
+                        placeholder="Enter password"
+                        autocomplete="current-password"
+                    >
+
+                    <i
+                        class="fa-solid fa-eye"
+                        id="togglePassword"
+                        title="Show Password">
+                    </i>
+
+                </div>
+
+                <small id="passwordError"></small>
+
+            </div>
+
+
+            <!-- Forgot Password -->
+            <div class="forgot-container">
+
+                <a href="#" id="forgotPassword">
+                    Forgot Password?
+                </a>
+
+            </div>
+
+
+            <!-- Buttons -->
+            <div class="button-container">
+
+                <button
+                    type="button"
+                    id="loginButton">
+                    Login
+                </button>
+
+                <button
+                    type="button"
+                    id="resetButton">
+                    Reset
+                </button>
+
+                <button
+                    type="button"
+                    id="logoutButton">
+                    Logout
+                </button>
+
+            </div>
+
+
+            <!-- Message -->
+            <p id="message"></p>
+
+        </div>
+
+    </div>
+
+
+    <script src="frontend.js"></script>
+
+</body>
+
+</html>

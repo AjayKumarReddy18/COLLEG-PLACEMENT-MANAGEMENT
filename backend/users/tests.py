@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.db.utils import IntegrityError
 from django.test import TestCase
 from django.urls import reverse
@@ -134,6 +135,75 @@ class StudentRegistrationAPITests(TestCase):
         self.assertNotEqual(user.password, "SecurePassword123!")
         self.assertTrue(user.check_password("SecurePassword123!"))
 
+    def test_student_id_is_required(self):
+        payload = self.valid_payload.copy()
+        payload.pop("student_id")
+
+        response = self.client.post(self.url, payload)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("student_id", response.data)
+
+    def test_two_student_ids_create_separate_users_and_profile_update_is_scoped(self):
+        student_one_payload = self.valid_payload.copy()
+        student_one_payload.update(
+            {
+                "student_id": "STU001",
+                "first_name": "Student",
+                "last_name": "One",
+                "department": "Computer Science",
+                "course": "B.Tech",
+                "year": 4,
+                "cgpa": "8.10",
+                "skills": "Python",
+            }
+        )
+        student_two_payload = self.valid_payload.copy()
+        student_two_payload.update(
+            {
+                "email": "student2@college.edu",
+                "student_id": "STU002",
+                "first_name": "Student",
+                "last_name": "Two",
+                "department": "Electronics",
+                "course": "B.Tech",
+                "year": 3,
+                "cgpa": "7.80",
+                "skills": "C++",
+            }
+        )
+
+        student_one_response = self.client.post(self.url, student_one_payload)
+        student_two_response = self.client.post(self.url, student_two_payload)
+
+        self.assertEqual(student_one_response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(student_two_response.status_code, status.HTTP_201_CREATED)
+        self.assertNotEqual(student_one_response.data["user"]["id"], student_two_response.data["user"]["id"])
+        self.assertEqual(User.objects.filter(student_id__in=["STU001", "STU002"]).count(), 2)
+
+        student_one = User.objects.get(student_id="STU001")
+        student_two = User.objects.get(student_id="STU002")
+        self.assertEqual(student_one.student_profile.skills, "Python")
+        self.assertEqual(student_two.student_profile.skills, "C++")
+
+        login_response = self.client.post(
+            reverse("login"),
+            {"identifier": "STU001", "password": self.valid_payload["password"]},
+        )
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {login_response.data['access']}")
+        update_response = self.client.patch(
+            reverse("student-profile"),
+            {"skills": "Python, Django"},
+            format="json",
+        )
+
+        self.assertEqual(update_response.status_code, status.HTTP_200_OK)
+        student_one.refresh_from_db()
+        student_two.refresh_from_db()
+        self.assertEqual(student_one.student_profile.skills, "Python, Django")
+        self.assertEqual(student_two.student_profile.skills, "C++")
+        self.assertEqual(User.objects.filter(student_id__in=["STU001", "STU002"]).count(), 2)
+
     def test_duplicate_email_rejected(self):
         self.client.post(self.url, self.valid_payload)
         payload = self.valid_payload.copy()
@@ -141,6 +211,22 @@ class StudentRegistrationAPITests(TestCase):
         response = self.client.post(self.url, payload)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("email", response.data)
+
+    def test_invalid_email_formats_rejected(self):
+        for email in [
+            "student@gmail",
+            "student@",
+            "@gmail.com",
+            "student gmail.com",
+            "student@.com",
+            "student..name@gmail.com",
+        ]:
+            with self.subTest(email=email):
+                payload = self.valid_payload.copy()
+                payload["email"] = email
+                response = self.client.post(self.url, payload)
+                self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+                self.assertIn("email", response.data)
 
     def test_duplicate_student_id_rejected(self):
         self.client.post(self.url, self.valid_payload)
@@ -208,6 +294,36 @@ class CompanyRegistrationAPITests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("email", response.data)
 
+    def test_company_invalid_email_formats_rejected(self):
+        for email in [
+            "student@gmail",
+            "student@",
+            "@gmail.com",
+            "student gmail.com",
+            "student@.com",
+            "student..name@gmail.com",
+        ]:
+            with self.subTest(email=email):
+                payload = self.valid_payload.copy()
+                payload["email"] = email
+                response = self.client.post(self.url, payload)
+                self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+                self.assertIn("email", response.data)
+
+    def test_company_registration_rejects_invalid_contact_email(self):
+        payload = self.valid_payload.copy()
+        payload.update(
+            {
+                "company_name": "Innovate Tech",
+                "industry": "Technology",
+                "location": "Bengaluru",
+                "contact_email": "student..name@gmail.com",
+            }
+        )
+        response = self.client.post(self.url, payload)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("contact_email", response.data)
+
     def test_company_cannot_assign_tpo_role_or_student_id(self):
         payload = self.valid_payload.copy()
         payload["role"] = "TPO"
@@ -217,6 +333,68 @@ class CompanyRegistrationAPITests(TestCase):
         user = User.objects.get(email="hr@innovate.com")
         self.assertEqual(user.role, User.Role.COMPANY)
         self.assertIsNone(user.student_id)
+
+
+class TPORegistrationAPITests(TestCase):
+    """Tests for public TPO account registration through the existing User model."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.url = reverse("register-tpo")
+        self.valid_payload = {
+            "first_name": "Taylor",
+            "last_name": "Officer",
+            "email": "taylor.officer@college.edu",
+            "password": "SecurePassword123!",
+            "password_confirm": "SecurePassword123!",
+        }
+
+    def test_tpo_registration_creates_user_and_allows_login(self):
+        response = self.client.post(self.url, self.valid_payload)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["user"]["role"], "TPO")
+        self.assertNotIn("password", response.data["user"])
+
+        user = User.objects.get(email="taylor.officer@college.edu")
+        self.assertEqual(user.role, User.Role.TPO)
+        self.assertTrue(user.check_password("SecurePassword123!"))
+
+        duplicate_response = self.client.post(self.url, self.valid_payload)
+        self.assertEqual(duplicate_response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("email", duplicate_response.data)
+
+        login_response = self.client.post(
+            reverse("login"),
+            {"identifier": user.email, "password": "SecurePassword123!"},
+        )
+        self.assertEqual(login_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(login_response.data["user"]["role"], "TPO")
+        self.assertIn("access", login_response.data)
+
+    def test_tpo_registration_rejects_invalid_email_and_password(self):
+        missing_name = self.valid_payload.copy()
+        missing_name.pop("first_name")
+        response = self.client.post(self.url, missing_name)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("first_name", response.data)
+
+        invalid_email = self.valid_payload.copy()
+        invalid_email["email"] = "taylor@college"
+        response = self.client.post(self.url, invalid_email)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("email", response.data)
+
+        mismatched_password = self.valid_payload.copy()
+        mismatched_password["password_confirm"] = "DifferentPassword123!"
+        response = self.client.post(self.url, mismatched_password)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("password_confirm", response.data)
+
+        weak_password = self.valid_payload.copy()
+        weak_password["password"] = "123"
+        weak_password["password_confirm"] = "123"
+        response = self.client.post(self.url, weak_password)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
 
 class LoginAPITests(TestCase):
@@ -275,6 +453,23 @@ class LoginAPITests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["user"]["role"], "STUDENT")
         self.assertEqual(response.data["user"]["email"], "student@college.edu")
+
+    def test_login_rejects_invalid_email_identifiers(self):
+        for identifier in [
+            "student@gmail",
+            "student@",
+            "@gmail.com",
+            "student gmail.com",
+            "student@.com",
+            "student..name@gmail.com",
+        ]:
+            with self.subTest(identifier=identifier):
+                response = self.client.post(
+                    self.url,
+                    {"identifier": identifier, "password": "StudentPass123!"},
+                )
+                self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+                self.assertIn("valid email", str(response.data).lower())
 
     def test_company_login_with_email(self):
         response = self.client.post(
@@ -363,6 +558,70 @@ class JWTAndCurrentUserAPITests(TestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("access", response.data)
+
+
+class PasswordResetAPITests(TestCase):
+    """Tests for forgot-password and password reset endpoints."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            email="resetuser@college.edu",
+            student_id="23CS_RESET",
+            password="OldPassword123!",
+            first_name="Reset",
+            last_name="User",
+            role=User.Role.STUDENT,
+        )
+
+    def test_forgot_password_request_is_generic(self):
+        response = self.client.post(
+            reverse("password-reset-request"),
+            {"email": "resetuser@college.edu"},
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("detail", response.data)
+        self.assertIn("If an account exists", response.data["detail"])
+        self.assertEqual(set(response.data), {"detail"})
+
+        unknown_response = self.client.post(
+            reverse("password-reset-request"),
+            {"email": "unknown@college.edu"},
+        )
+        self.assertEqual(unknown_response.status_code, response.status_code)
+        self.assertEqual(unknown_response.data, response.data)
+
+    def test_forgot_password_rejects_invalid_email_formats(self):
+        for email in [
+            "student@gmail",
+            "student@",
+            "@gmail.com",
+            "student gmail.com",
+            "student@.com",
+            "student..name@gmail.com",
+        ]:
+            with self.subTest(email=email):
+                response = self.client.post(
+                    reverse("password-reset-request"),
+                    {"email": email},
+                )
+                self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+                self.assertIn("valid email", str(response.data).lower())
+
+    def test_password_reset_confirms_and_changes_password(self):
+        token = PasswordResetTokenGenerator().make_token(self.user)
+        response = self.client.post(
+            reverse("password-reset-confirm"),
+            {
+                "email": "resetuser@college.edu",
+                "token": token,
+                "password": "NewPassword123!",
+                "password_confirm": "NewPassword123!",
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password("NewPassword123!"))
 
 
 class RolePermissionTests(TestCase):

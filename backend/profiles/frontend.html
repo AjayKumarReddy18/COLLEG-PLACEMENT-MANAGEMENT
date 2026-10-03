@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Login - Placement Management System</title>
+
+    <link rel="stylesheet" href="frontend.css">
+</head>
+
+<body>
+
+    <div class="login-container">
+
+        <div class="login-box">
+
+            <h1>Welcome Back</h1>
+            <p class="subtitle">Placement Management System</p>
+
+            <!-- Role Selection -->
+            <div class="role-section">
+
+                <label>Select Login Type</label>
+
+                <div class="roles">
+
+                    <label class="role-option">
+                        <input type="radio" name="role" value="admin" checked>
+                        <span>Admin</span>
+                    </label>
+
+                    <label class="role-option">
+                        <input type="radio" name="role" value="company">
+                        <span>Company</span>
+                    </label>
+
+                    <label class="role-option">
+                        <input type="radio" name="role" value="student">
+                        <span>Student</span>
+                    </label>
+
+                </div>
+
+            </div>
+
+
+            <!-- Login Form -->
+            <form id="loginForm" novalidate>
+
+                <!-- Username -->
+                <div class="input-group">
+
+                    <label for="username">Username</label>
+
+                    <input
+                        type="text"
+                        id="username"
+                        name="username"
+                        placeholder="Enter your username"
+                        autocomplete="username"
+                    >
+
+                    <small id="usernameError" class="error"></small>
+
+                </div>
+
+
+                <!-- Email -->
+                <div class="input-group">
+
+                    <label for="email">Email Address</label>
+
+                    <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        placeholder="example@gmail.com"
+                        autocomplete="email"
+                    >
+
+                    <small id="emailError" class="error"></small>
+
+                </div>
+
+
+                <!-- Password -->
+                <div class="input-group">
+
+                    <label for="password">Password</label>
+
+                    <div class="password-container">
+
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            placeholder="Enter your password"
+                            autocomplete="current-password"
+                        >
+
+                        <button
+                            type="button"
+                            id="togglePassword"
+                            class="eye-button"
+                            aria-label="Show password"
+                        >
+                            👁
+                        </button>
+
+                    </div>
+
+                    <small id="passwordError" class="error"></small>
+
+                </div>
+
+
+                <!-- Forgot Password -->
+                <div class="forgot-container">
+
+                    <a href="#" id="forgotPassword">
+                        Forgot Password?
+                    </a>
+
+                </div>
+
+
+                <!-- Login Button -->
+                <button type="submit" class="login-button">
+                    Login
+                </button>
+
+                <!-- General Message -->
+                <p id="loginMessage" class="login-message"></p>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+    <script src="frontend.js"></script>
+
+</body>
+</html>

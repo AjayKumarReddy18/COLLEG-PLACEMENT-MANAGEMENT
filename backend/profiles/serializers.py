@@ -3,12 +3,16 @@ from decimal import Decimal
 from django.utils import timezone
 from rest_framework import serializers
 
+from users.validators import validate_email_address
+
 from .models import (
     CompanyProfile,
     Interview,
     JobApplication,
     JobListing,
     JobOffer,
+    Notification,
+    PlacementDrive,
     PlacementRecord,
     StudentProfile,
 )
@@ -27,6 +31,7 @@ class StudentProfileSerializer(serializers.ModelSerializer):
     student_id = serializers.CharField(source="user.student_id", read_only=True)
     first_name = serializers.CharField(source="user.first_name", read_only=True)
     last_name = serializers.CharField(source="user.last_name", read_only=True)
+    phone_number = serializers.CharField(source="user.phone_number", read_only=True, allow_null=True)
 
     instagram_url = serializers.URLField(
         required=False,
@@ -49,6 +54,7 @@ class StudentProfileSerializer(serializers.ModelSerializer):
             "student_id",
             "first_name",
             "last_name",
+            "phone_number",
             "department",
             "course",
             "year",
@@ -88,6 +94,7 @@ class CompanyProfileSerializer(serializers.ModelSerializer):
     """
 
     user_email = serializers.EmailField(source="user.email", read_only=True)
+    contact_email = serializers.EmailField(validators=[validate_email_address])
 
     class Meta:
         model = CompanyProfile
@@ -216,6 +223,7 @@ class TPOStudentSerializer(serializers.ModelSerializer):
     first_name = serializers.CharField(source="user.first_name", read_only=True)
     last_name = serializers.CharField(source="user.last_name", read_only=True)
     phone_number = serializers.CharField(source="user.phone_number", read_only=True)
+    is_active = serializers.BooleanField(source="user.is_active", read_only=True)
 
     class Meta:
         model = StudentProfile
@@ -227,6 +235,7 @@ class TPOStudentSerializer(serializers.ModelSerializer):
             "first_name",
             "last_name",
             "phone_number",
+            "is_active",
             "department",
             "course",
             "year",
@@ -290,11 +299,22 @@ class JobListingSerializer(serializers.ModelSerializer):
             JobListing.JobStatus.DRAFT,
             JobListing.JobStatus.PENDING_TPO_APPROVAL,
         ]
+        if self.instance and self.instance.status == JobListing.JobStatus.APPROVED:
+            allowed_company_statuses.append(JobListing.JobStatus.CLOSED)
         if value not in allowed_company_statuses:
             raise serializers.ValidationError(
-                f"Companies can only set status to 'DRAFT' or 'PENDING_TPO_APPROVAL'. Cannot set '{value}'."
+                f"Companies can only set status to 'DRAFT' or 'PENDING_TPO_APPROVAL', or close an approved job. Cannot set '{value}'."
             )
         return value
+
+    def update(self, instance, validated_data):
+        if (
+            instance.status == JobListing.JobStatus.APPROVED
+            and validated_data
+            and "status" not in validated_data
+        ):
+            validated_data["status"] = JobListing.JobStatus.PENDING_TPO_APPROVAL
+        return super().update(instance, validated_data)
 
     def create(self, validated_data):
         user = self.context["request"].user
@@ -458,11 +478,29 @@ class StudentJobListingSerializer(serializers.ModelSerializer):
         return obj.applications.filter(student=request.user.student_profile).exists()
 
 
+class StudentCompanySerializer(serializers.ModelSerializer):
+    available_jobs = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = CompanyProfile
+        fields = [
+            "id",
+            "company_name",
+            "company_description",
+            "industry",
+            "website",
+            "location",
+            "available_jobs",
+        ]
+        read_only_fields = fields
+
+
 class StudentApplicationSerializer(serializers.ModelSerializer):
     """
     Serializer for Students viewing their own job applications.
     """
 
+    student_id = serializers.CharField(source="student.user.student_id", read_only=True)
     job_id = serializers.IntegerField(source="job.id", read_only=True)
     job_title = serializers.CharField(source="job.job_title", read_only=True)
     company_name = serializers.CharField(source="job.company.company_name", read_only=True)
@@ -473,6 +511,7 @@ class StudentApplicationSerializer(serializers.ModelSerializer):
         model = JobApplication
         fields = [
             "id",
+            "student_id",
             "job_id",
             "job_title",
             "company_name",
@@ -518,6 +557,64 @@ class CompanyApplicationSerializer(serializers.ModelSerializer):
             "status",
             "applied_at",
             "updated_at",
+        ]
+        read_only_fields = fields
+
+
+class TPOApplicationSerializer(serializers.ModelSerializer):
+    job_id = serializers.IntegerField(source="job.id", read_only=True)
+    student_id = serializers.CharField(source="student.user.student_id", read_only=True)
+    student_name = serializers.CharField(source="student.user.full_name", read_only=True)
+    student_email = serializers.EmailField(source="student.user.email", read_only=True)
+    department = serializers.CharField(source="student.department", read_only=True)
+    course = serializers.CharField(source="student.course", read_only=True)
+    cgpa = serializers.DecimalField(source="student.cgpa", max_digits=4, decimal_places=2, read_only=True)
+    company_name = serializers.CharField(source="job.company.company_name", read_only=True)
+    job_title = serializers.CharField(source="job.job_title", read_only=True)
+
+    class Meta:
+        model = JobApplication
+        fields = [
+            "id",
+            "job_id",
+            "student_id",
+            "student_name",
+            "student_email",
+            "department",
+            "course",
+            "cgpa",
+            "company_name",
+            "job_title",
+            "status",
+            "applied_at",
+            "updated_at",
+        ]
+        read_only_fields = fields
+
+
+class TPOInterviewSerializer(serializers.ModelSerializer):
+    student_name = serializers.CharField(source="application.student.user.full_name", read_only=True)
+    student_id = serializers.CharField(source="application.student.user.student_id", read_only=True)
+    company_name = serializers.CharField(source="application.job.company.company_name", read_only=True)
+    job_title = serializers.CharField(source="application.job.job_title", read_only=True)
+
+    class Meta:
+        model = Interview
+        fields = [
+            "id",
+            "application_id",
+            "student_name",
+            "student_id",
+            "company_name",
+            "job_title",
+            "round",
+            "interview_type",
+            "scheduled_at",
+            "venue",
+            "meeting_link",
+            "interviewer",
+            "status",
+            "feedback",
         ]
         read_only_fields = fields
 
@@ -815,6 +912,85 @@ class PlacementRecordSerializer(serializers.ModelSerializer):
             "placed_at",
         ]
         read_only_fields = fields
+
+
+class PlacementRecordStatusSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PlacementRecord
+        fields = ["placement_status"]
+
+
+class PlacementDriveSerializer(serializers.ModelSerializer):
+    company_name = serializers.CharField(source="company.company_name", read_only=True)
+    job_title = serializers.CharField(source="job.job_title", read_only=True)
+    company = serializers.PrimaryKeyRelatedField(queryset=CompanyProfile.objects.all())
+    job = serializers.PrimaryKeyRelatedField(queryset=JobListing.objects.select_related("company").all())
+
+    class Meta:
+        model = PlacementDrive
+        fields = [
+            "id",
+            "company",
+            "company_name",
+            "job",
+            "job_title",
+            "drive_date",
+            "eligible_departments",
+            "eligible_courses",
+            "minimum_cgpa",
+            "application_deadline",
+            "status",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "company_name", "job_title", "created_at", "updated_at"]
+
+    def validate(self, attrs):
+        company = attrs.get("company", self.instance.company if self.instance else None)
+        job = attrs.get("job", self.instance.job if self.instance else None)
+        drive_date = attrs.get("drive_date", self.instance.drive_date if self.instance else None)
+        deadline = attrs.get("application_deadline", self.instance.application_deadline if self.instance else None)
+        drive_status = attrs.get("status", self.instance.status if self.instance else PlacementDrive.DriveStatus.DRAFT)
+
+        if company and job and job.company_id != company.id:
+            raise serializers.ValidationError({"job": "The selected job must belong to the selected company."})
+        if drive_date and drive_date < timezone.localdate():
+            raise serializers.ValidationError({"drive_date": "Drive date must be today or in the future."})
+        if deadline and deadline <= timezone.now():
+            raise serializers.ValidationError({"application_deadline": "Application deadline must be in the future."})
+        if drive_status == PlacementDrive.DriveStatus.PUBLISHED and job and job.status != JobListing.JobStatus.APPROVED:
+            raise serializers.ValidationError({"status": "Only drives for TPO-approved jobs can be published."})
+        return attrs
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = [
+            "id",
+            "notification_type",
+            "title",
+            "message",
+            "is_read",
+            "created_at",
+            "job",
+            "application",
+            "interview",
+            "offer",
+            "placement_record",
+        ]
+        read_only_fields = [
+            "id",
+            "notification_type",
+            "title",
+            "message",
+            "created_at",
+            "job",
+            "application",
+            "interview",
+            "offer",
+            "placement_record",
+        ]
 
 
 

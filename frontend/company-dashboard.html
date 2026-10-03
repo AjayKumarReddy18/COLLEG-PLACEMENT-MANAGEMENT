@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Company dashboard for the College Placement Management System">
+    <title>Company Dashboard | College Placement Management System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="company-dashboard-body">
+    <div class="app-shell">
+        <aside class="sidebar company-sidebar" id="company-sidebar">
+            <div class="brand-box">
+                <div class="brand-mark company-brand-mark">CP</div>
+                <div class="brand-copy">
+                    <span>College Placement</span>
+                    <small>Management</small>
+                </div>
+            </div>
+
+            <nav class="side-nav" aria-label="Company navigation">
+                <button class="nav-item is-active" type="button" data-company-section="overview">
+                    <span class="nav-icon">▣</span>
+                    <span>Dashboard</span>
+                </button>
+                <button class="nav-item" type="button" data-company-section="company-profile-section">
+                    <span class="nav-icon">◉</span>
+                    <span>Company Profile</span>
+                </button>
+                <button class="nav-item" type="button" data-company-section="post-job-section">
+                    <span class="nav-icon">＋</span>
+                    <span>Post Job</span>
+                </button>
+                <button class="nav-item" type="button" data-company-section="my-jobs-section">
+                    <span class="nav-icon">▤</span>
+                    <span>My Jobs</span>
+                </button>
+                <button class="nav-item" type="button" data-company-section="applicants-section">
+                    <span class="nav-icon">◌</span>
+                    <span>Applicants</span>
+                </button>
+                <button class="nav-item" type="button" data-company-section="shortlisted-section">
+                    <span class="nav-icon">★</span>
+                    <span>Shortlisted Students</span>
+                </button>
+                <button class="nav-item" type="button" data-company-section="selected-section">
+                    <span class="nav-icon">✓</span>
+                    <span>Offers</span>
+                </button>
+                <button class="nav-item" type="button" data-company-section="interviews-section">
+                    <span class="nav-icon">📅</span>
+                    <span>Interviews</span>
+                </button>
+                <button class="nav-item" type="button" data-company-section="notifications-section">
+                    <span class="nav-icon">!</span>
+                    <span>Notifications</span>
+                </button>
+                <button class="nav-item" type="button" data-company-section="company-profile-section">
+                    <span class="nav-icon">⚙</span>
+                    <span>Settings</span>
+                </button>
+            </nav>
+
+            <button class="sidebar-logout" type="button" data-action="logout">Logout</button>
+        </aside>
+
+        <div class="content-area company-content-area">
+            <header class="topbar company-topbar">
+                <button class="mobile-menu-toggle" type="button" aria-label="Open menu" aria-expanded="false">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+
+                <div>
+                    <p class="topbar-label">Recruitment portal</p>
+                    <h1>Company Dashboard</h1>
+                </div>
+
+                <div class="topbar-actions">
+                    <button class="notification-button" type="button" data-company-section="notifications-section" aria-label="Notifications">
+                        🔔
+                        <span class="notification-badge" id="company-notification-badge" hidden></span>
+                    </button>
+
+                    <div class="user-pill company-user-pill">
+                        <div class="user-avatar company-avatar" id="company-avatar">--</div>
+                        <div class="user-meta">
+                            <strong id="company-name-display">Loading company details...</strong>
+                            <span>Recruitment Team</span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main class="dashboard-main company-dashboard-main">
+                <section class="stats-grid company-stats-grid" id="overview">
+                    <article class="stat-card">
+                        <div class="stat-card-header">
+                            <span class="stat-label">Active Jobs</span>
+                            <span class="stat-icon blue">📄</span>
+                        </div>
+                        <strong class="stat-value" id="stat-active-jobs">Loading...</strong>
+                        <small class="stat-meta">Open positions</small>
+                    </article>
+
+                    <article class="stat-card">
+                        <div class="stat-card-header">
+                            <span class="stat-label">Total Applicants</span>
+                            <span class="stat-icon green">👥</span>
+                        </div>
+                        <strong class="stat-value" id="stat-total-applicants">Loading...</strong>
+                        <small class="stat-meta">Applications received</small>
+                    </article>
+
+                    <article class="stat-card">
+                        <div class="stat-card-header">
+                            <span class="stat-label">Shortlisted</span>
+                            <span class="stat-icon orange">★</span>
+                        </div>
+                        <strong class="stat-value" id="stat-shortlisted-count">Loading...</strong>
+                        <small class="stat-meta">Selected for review</small>
+                    </article>
+
+                    <article class="stat-card">
+                        <div class="stat-card-header">
+                            <span class="stat-label">Interviews</span>
+                            <span class="stat-icon purple">📅</span>
+                        </div>
+                        <strong class="stat-value" id="stat-interview-count">Loading...</strong>
+                        <small class="stat-meta">Upcoming rounds</small>
+                    </article>
+
+                    <article class="stat-card placement-card">
+                        <div class="stat-card-header">
+                            <span class="stat-label">Selected Students</span>
+                            <span class="stat-icon coral">✓</span>
+                        </div>
+                        <strong class="stat-value" id="stat-selected-count">Loading...</strong>
+                        <small class="stat-meta">Final offers in progress</small>
+                    </article>
+                </section>
+
+                <section class="panel" id="company-profile-section">
+                    <div class="panel-header">
+                        <div>
+                            <p class="section-kicker">Company account</p>
+                            <h2>Company Profile</h2>
+                        </div>
+                    </div>
+                    <p class="form-status" id="company-profile-load-status" role="status" aria-live="polite">Loading company details...</p>
+                    <p class="profile-label">Verification status: <strong id="company-verification-status">Loading...</strong></p>
+                    <p class="form-status" id="company-verification-remarks"></p>
+                    <form class="job-form" id="company-profile-form">
+                        <div class="form-grid">
+                            <div class="form-field"><label for="company-profile-name">Company name</label><input id="company-profile-name" name="company_name" type="text" required></div>
+                            <div class="form-field"><label for="company-profile-industry">Industry</label><input id="company-profile-industry" name="industry" type="text" required></div>
+                            <div class="form-field"><label for="company-profile-location">Location</label><input id="company-profile-location" name="location" type="text" required></div>
+                            <div class="form-field"><label for="company-profile-email">Contact email</label><input id="company-profile-email" name="contact_email" type="email" required></div>
+                            <div class="form-field"><label for="company-profile-phone">Contact phone</label><input id="company-profile-phone" name="contact_phone" type="tel"></div>
+                            <div class="form-field"><label for="company-profile-size">Company size</label><input id="company-profile-size" name="company_size" type="text"></div>
+                            <div class="form-field form-field-full"><label for="company-profile-description">Description</label><textarea id="company-profile-description" name="company_description" rows="3"></textarea></div>
+                            <div class="form-field form-field-full"><label for="company-profile-website">Website</label><input id="company-profile-website" name="website" type="url"></div>
+                        </div>
+                        <div class="form-actions"><button class="primary-button" id="company-profile-save" type="submit">Save Profile</button></div>
+                    </form>
+                </section>
+
+                <section class="panel" id="post-job-section">
+                    <div class="panel-header">
+                        <div>
+                            <p class="section-kicker">Recruitment</p>
+                            <h2>Post Job</h2>
+                        </div>
+                    </div>
+
+                    <form class="job-form" id="job-form">
+                        <div class="form-grid">
+                            <div class="form-field">
+                                <label for="job-title">Job title</label>
+                                <input id="job-title" name="jobTitle" type="text" placeholder="e.g. Software Engineer" required>
+                            </div>
+                            <div class="form-field">
+                                <label for="job-location">Location</label>
+                                <input id="job-location" name="jobLocation" type="text" placeholder="e.g. Bengaluru" required>
+                            </div>
+                            <div class="form-field">
+                                <label for="job-package">Salary / Package</label>
+                                <input id="job-package" name="jobPackage" type="number" min="0" step="0.01" placeholder="e.g. 1200000" required>
+                            </div>
+                            <div class="form-field">
+                                <label for="employment-type">Employment Type</label>
+                                <select id="employment-type" name="employmentType">
+                                    <option value="FULL_TIME">Full Time</option>
+                                    <option value="INTERNSHIP">Internship</option>
+                                    <option value="PART_TIME">Part Time</option>
+                                </select>
+                            </div>
+                            <div class="form-field">
+                                <label for="job-status">Job status</label>
+                                <select id="job-status" name="jobStatus">
+                                    <option value="PENDING_TPO_APPROVAL">Pending TPO Approval</option>
+                                    <option value="DRAFT">Draft</option>
+                                </select>
+                            </div>
+                            <div class="form-field form-field-full">
+                                <label for="job-description">Job description</label>
+                                <textarea id="job-description" name="jobDescription" rows="4" placeholder="Describe the role, responsibilities, and expectations." required></textarea>
+                            </div>
+                            <div class="form-field">
+                                <label for="min-cgpa">Minimum CGPA</label>
+                                <input id="min-cgpa" name="minCgpa" type="number" min="0" max="10" step="0.1" required>
+                            </div>
+                            <div class="form-field">
+                                <label for="eligible-departments">Eligible departments</label>
+                                <input id="eligible-departments" name="eligibleDepartments" type="text" placeholder="CSE, ECE, IT" required>
+                            </div>
+                            <div class="form-field">
+                                <label for="eligible-courses">Eligible courses</label>
+                                <input id="eligible-courses" name="eligibleCourses" type="text" placeholder="B.Tech, MCA">
+                            </div>
+                            <div class="form-field">
+                                <label for="application-deadline">Application deadline</label>
+                                <input id="application-deadline" name="applicationDeadline" type="date" required>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button class="secondary-button" type="reset">Clear</button>
+                            <button class="primary-button" id="job-submit-button" type="submit">Create Job</button>
+                        </div>
+                        <p class="form-status" id="job-form-status" role="status" aria-live="polite"></p>
+                    </form>
+                </section>
+
+                <section class="panel" id="my-jobs-section">
+                    <div class="panel-header">
+                        <div>
+                            <p class="section-kicker">Operations</p>
+                            <h2>My Jobs</h2>
+                        </div>
+                    </div>
+
+                    <div class="jobs-list" id="company-jobs-list"><p class="loading-state">Loading company jobs...</p></div>
+                </section>
+
+                <section class="panel" id="applicants-section">
+                    <div class="panel-header">
+                        <div>
+                            <p class="section-kicker">Talent</p>
+                            <h2>Applicants</h2>
+                        </div>
+                    </div>
+
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Student</th>
+                                    <th>Email</th>
+                                    <th>Department</th>
+                                    <th>Course</th>
+                                    <th>Year</th>
+                                    <th>CGPA</th>
+                                    <th>Skills</th>
+                                    <th>Applied Job</th>
+                                    <th>Applied</th>
+                                    <th>Resume</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="applicants-table-body"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="panel" id="shortlisted-section">
+                    <div class="panel-header">
+                        <div>
+                            <p class="section-kicker">Review</p>
+                            <h2>Shortlisted Students</h2>
+                        </div>
+                    </div>
+
+                    <div class="shortlisted-list" id="shortlisted-list"></div>
+                </section>
+
+                <section class="panel" id="interviews-section">
+                    <div class="panel-header">
+                        <div>
+                            <p class="section-kicker">Schedule</p>
+                            <h2>Interviews</h2>
+                        </div>
+                    </div>
+
+                    <div class="interview-list company-interview-list" id="company-interview-list"></div>
+                </section>
+
+                <section class="panel" id="selected-section">
+                    <div class="panel-header">
+                        <div>
+                            <p class="section-kicker">Offers</p>
+                            <h2>Selected Students</h2>
+                        </div>
+                    </div>
+
+                    <div class="selected-list" id="selected-list"></div>
+                </section>
+
+                <section class="panel" id="notifications-section">
+                    <div class="panel-header">
+                        <div>
+                            <p class="section-kicker">Updates</p>
+                            <h2>Notifications</h2>
+                        </div>
+                    </div>
+                    <div class="notification-list" id="company-notifications-list"></div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <div class="modal-backdrop" id="company-schedule-modal" aria-hidden="true">
+        <div class="job-modal company-modal" role="dialog" aria-modal="true" aria-labelledby="schedule-modal-title">
+            <button class="modal-close" type="button" id="schedule-modal-close" aria-label="Close schedule form">×</button>
+            <div class="modal-body">
+                <p class="section-kicker">Interview</p>
+                <h3 id="schedule-modal-title">Schedule Interview</h3>
+                <form id="schedule-interview-form" class="schedule-form">
+                    <div class="form-field">
+                        <label for="interview-round">Round</label>
+                        <input id="interview-round" name="round" type="number" min="1" value="1" required>
+                    </div>
+                    <div class="form-field">
+                        <label for="interview-date">Interview date</label>
+                        <input id="interview-date" name="interviewDate" type="date" required>
+                    </div>
+                    <div class="form-field">
+                        <label for="interview-time">Time</label>
+                        <input id="interview-time" name="interviewTime" type="time" required>
+                    </div>
+                    <div class="form-field">
+                        <label for="interview-type">Interview type</label>
+                        <select id="interview-type" name="interviewType">
+                            <option value="ONLINE">Online</option>
+                            <option value="OFFLINE">Offline</option>
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <label for="interview-link">Meeting link</label>
+                        <input id="interview-link" name="meetingLink" type="url" placeholder="Required for online interviews">
+                    </div>
+                    <div class="form-field">
+                        <label for="interview-venue">Venue</label>
+                        <input id="interview-venue" name="venue" type="text" placeholder="Required for offline interviews">
+                    </div>
+                    <div class="form-field">
+                        <label for="interviewer-name">Interviewer</label>
+                        <input id="interviewer-name" name="interviewer" type="text">
+                    </div>
+                    <div class="form-actions modal-form-actions">
+                        <button class="secondary-button" type="button" id="schedule-modal-cancel">Cancel</button>
+                        <button class="primary-button" type="submit">Save Interview</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-backdrop" id="company-offer-modal" aria-hidden="true">
+        <div class="job-modal company-modal" role="dialog" aria-modal="true" aria-labelledby="company-offer-title">
+            <button class="modal-close" type="button" id="company-offer-close" aria-label="Close offer form">×</button>
+            <div class="modal-body">
+                <p class="section-kicker">Offer</p>
+                <h3 id="company-offer-title">Issue Job Offer</h3>
+                <form id="company-offer-form" class="schedule-form">
+                    <div class="form-field">
+                        <label for="offer-letter-number">Offer letter number</label>
+                        <input id="offer-letter-number" name="offer_letter_number" type="text" required>
+                    </div>
+                    <div class="form-field">
+                        <label for="offer-ctc">CTC</label>
+                        <input id="offer-ctc" name="ctc" type="number" min="0.01" step="0.01" required>
+                    </div>
+                    <div class="form-field">
+                        <label for="offer-joining-date">Joining date</label>
+                        <input id="offer-joining-date" name="joining_date" type="date" required>
+                    </div>
+                    <div class="form-field">
+                        <label for="offer-details">Offer details</label>
+                        <textarea id="offer-details" name="offer_details" rows="3"></textarea>
+                    </div>
+                    <div class="form-actions modal-form-actions">
+                        <button class="secondary-button" type="button" id="company-offer-cancel">Cancel</button>
+                        <button class="primary-button" type="submit">Issue Offer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script src="js/script.js"></script>
+</body>
+</html>
+
+<input id="interview-venue"

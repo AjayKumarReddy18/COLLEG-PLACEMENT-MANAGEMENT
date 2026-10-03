@@ -38,7 +38,7 @@ cd backend
 python -m pip install -r requirements.txt
 ```
 
-### 3. Database Configuration (MySQL / SQLite)
+### 3. Database Configuration (MySQL)
 
 1. Copy `.env.example` to `.env`:
    ```bash
@@ -53,7 +53,7 @@ python -m pip install -r requirements.txt
    DB_HOST=127.0.0.1
    DB_PORT=3306
    ```
-*(If you omit `.env` or set `DB_ENGINE=sqlite`, the application defaults to local SQLite automatically).*
+The application requires MySQL and will not fall back to SQLite. Set these values to match your existing MySQL database before starting Django.
 
 ### 4. Apply Migrations
 
